@@ -41,8 +41,13 @@ window.NDD_CONFIG = {
       "hi": "कृपया ध्यान दें: उपलब्धता के अनुसार ही व्यंजन परोसे जाएंगे।",
       "gu": "કૃપા કરીને નોંધો: ઉપલબ્ધતા મુજબ જ વાનગીઓ પીરસવામાં આવશે."
     },
+    "sourceNote": {
+      "en": "All prices are in Indian Rupees. Taxes and service charges are not included unless stated otherwise.",
+      "hi": "सभी कीमतें भारतीय रुपये में हैं। जब तक अलग से न बताया जाए, इनमें टैक्स और सर्विस चार्ज शामिल नहीं हैं।",
+      "gu": "બધી કિંમતો ભારતીય રૂપિયામાં છે. જ્યાં સુધી અલગથી જણાવવામાં ન આવે ત્યાં સુધી તેમાં ટેક્સ અને સર્વિસ ચાર્જ સામેલ નથી."
+    },
     "pricingDisclaimer": {
-      "en": "Prices are in Indian Rupees (₹). Applicable taxes and service charges are additional unless otherwise stated.",
+      "en": "<i> Prices are in Indian Rupees (₹). Applicable taxes and service charges are additional unless otherwise stated. </i>",
       "hi": "कीमतें भारतीय रुपये (₹) में हैं। लागू कर और सेवा शुल्क अतिरिक्त हैं जब तक कि अन्यथा न कहा गया हो।",
       "gu": "કિંમતો ભારતીય રૂપિયા (₹) માં છે. લાગુ કર અને સેવા શુલ્ક વધારાના છે સિવાય કે અન્યથા જણાવ્યું હોય."
     }
@@ -101,5 +106,5 @@ window.NDD_CONFIG = {
       }
     }
   ],
-  "lastUpdated": "2026-08-16T16:35:00.000Z"
+  "lastUpdated": "2026-08-16T17:44:31.642Z"
 };
