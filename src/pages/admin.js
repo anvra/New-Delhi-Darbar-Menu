@@ -121,11 +121,14 @@
 
   /* ---------------- translation status UI ---------------- */
 
-  const STATUS_LABEL = { auto: 'Auto', manual: 'Manual', missing: 'Needs translation' };
+  const LANG_NAME = { hi: 'Hindi', gu: 'Gujarati' };
+  // Plain-language wording, aimed at a non-technical restaurant owner.
+  const STATUS_LABEL = { auto: 'Done', manual: 'Yours', missing: 'Not translated' };
 
   /*
-    Build the per-field translation preview: shows the resolved Hindi/Gujarati
-    text, how it was produced, and an inline override editor.
+    Build the per-field translation panel: shows the resolved Hindi/Gujarati
+    text, whether it was translated automatically, and a clearly-labelled
+    editor for typing a different wording.
     `field` is the live {en,hi,gu} object — edits mutate it directly.
   */
   function buildTranslationPreview(field, onChange) {
@@ -134,6 +137,12 @@
 
     function render() {
       wrap.innerHTML = '';
+
+      const head = document.createElement('div');
+      head.className = 'trans-head';
+      head.innerHTML = '<span>Other languages</span>';
+      wrap.appendChild(head);
+
       ['hi', 'gu'].forEach(lang => {
         const state = Glossary.status(field, lang);
         const resolved = Glossary.resolve(field, lang);
@@ -142,44 +151,89 @@
         const row = document.createElement('div');
         row.className = 'trans-row';
         row.innerHTML = `
-          <span class="trans-lang">${lang}</span>
+          <span class="trans-lang-name">${LANG_NAME[lang]}</span>
           <span class="trans-text${isMissing ? ' is-missing' : ''}">${
             isMissing
-              ? (field.en ? 'No translation yet — will show English' : '—')
+              ? (field.en
+                  ? 'Will show the English words to customers'
+                  : 'Type the English name first')
               : esc(resolved)
           }</span>
-          <span class="tstatus ${state}">${STATUS_LABEL[state]}</span>
-          <button type="button" class="trans-edit">${state === 'manual' ? 'Edit' : 'Override'}</button>`;
+          <span class="tstatus ${state}">${STATUS_LABEL[state]}</span>`;
+
+        const actions = document.createElement('span');
+        actions.className = 'trans-actions';
+
+        const editBtn = document.createElement('button');
+        editBtn.type = 'button';
+        // A missing translation is the case that needs attention, so it gets
+        // the prominent, self-explanatory button.
+        if (isMissing && field.en) {
+          editBtn.className = 'btn-fixit';
+          editBtn.textContent = `Type ${LANG_NAME[lang]}`;
+        } else {
+          editBtn.className = 'btn-changeit';
+          editBtn.textContent = state === 'manual' ? 'Edit' : 'Change';
+        }
+        actions.appendChild(editBtn);
+        row.appendChild(actions);
 
         const override = document.createElement('div');
         override.className = 'trans-override';
+
+        const help = document.createElement('div');
+        help.className = 'override-help';
+        help.textContent = isMissing
+          ? `Type this dish's name in ${LANG_NAME[lang]}. Leave it empty to keep showing the English name.`
+          : `Type your own ${LANG_NAME[lang]} wording. Leave it empty to go back to the automatic translation.`;
+        override.appendChild(help);
+
         const input = document.createElement('input');
         input.type = 'text';
         input.value = field[lang] || '';
-        input.placeholder = `Type the ${lang === 'hi' ? 'Hindi' : 'Gujarati'} text manually`;
+        input.placeholder = `${LANG_NAME[lang]} name`;
+        input.setAttribute('aria-label', `${LANG_NAME[lang]} translation`);
         override.appendChild(input);
+
+        const buttons = document.createElement('div');
+        buttons.className = 'toolrow';
+
+        const doneBtn = document.createElement('button');
+        doneBtn.type = 'button';
+        doneBtn.className = 'btn small primary';
+        doneBtn.textContent = 'Done';
+        doneBtn.addEventListener('click', () => {
+          field[lang] = input.value.trim();
+          onChange && onChange();
+          render();
+        });
+        buttons.appendChild(doneBtn);
 
         if (state === 'manual') {
           const clear = document.createElement('button');
           clear.type = 'button';
           clear.className = 'btn small';
-          clear.style.marginTop = '6px';
-          clear.textContent = 'Clear override (use automatic)';
+          clear.textContent = 'Use automatic translation';
           clear.addEventListener('click', () => {
             field[lang] = '';
             onChange && onChange();
             render();
           });
-          override.appendChild(clear);
+          buttons.appendChild(clear);
         }
+
+        override.appendChild(buttons);
 
         input.addEventListener('input', () => {
           field[lang] = input.value.trim();
           onChange && onChange();
         });
-        input.addEventListener('blur', () => render());
+        input.addEventListener('keydown', e => {
+          if (e.key === 'Enter') { e.preventDefault(); doneBtn.click(); }
+          if (e.key === 'Escape') { e.preventDefault(); render(); }
+        });
 
-        row.querySelector('.trans-edit').addEventListener('click', () => {
+        editBtn.addEventListener('click', () => {
           override.classList.toggle('open');
           if (override.classList.contains('open')) input.focus();
         });
@@ -209,9 +263,9 @@
     const el = $('tsummary');
     if (!el) return;
     el.innerHTML = `
-      <div class="metric"><span class="tstatus auto">Auto</span> <b>${auto}</b> translated automatically</div>
-      <div class="metric"><span class="tstatus manual">Manual</span> <b>${manual}</b> manually overridden</div>
-      <div class="metric"><span class="tstatus missing">Needs translation</span> <b>${missing}</b> will show English</div>`;
+      <div class="metric"><span class="tstatus auto">Done</span> <b>${auto}</b> translated automatically</div>
+      <div class="metric"><span class="tstatus manual">Yours</span> <b>${manual}</b> written by you</div>
+      <div class="metric"><span class="tstatus missing">Not translated</span> <b>${missing}</b> will show English</div>`;
   }
 
   /* ---------------- dirty tracking ---------------- */
@@ -601,6 +655,225 @@
     readBrandForm();
     download('config.js', Store.configFileText(data));
   });
+
+  /* ---------------- GitHub publishing ---------------- */
+
+  const GitHub = window.NDDGitHub;
+
+  function resultBox(hostId, kind, title, bodyHtml) {
+    const host = $(hostId);
+    if (!host) return;
+    host.innerHTML = `<div class="result-box ${kind}"><strong>${esc(title)}</strong>${bodyHtml || ''}</div>`;
+  }
+
+  function showGitHubState(connected, info) {
+    $('ghConnected').style.display = connected ? '' : 'none';
+    $('ghSetup').style.display = connected ? 'none' : '';
+    if (connected && info) {
+      $('ghAccountInfo').textContent = `Signed in as ${info.login} · ${info.repo}`;
+    }
+  }
+
+  async function refreshHistory() {
+    const host = $('ghHistory');
+    if (!host) return;
+    host.textContent = 'Loading…';
+    try {
+      const commits = await GitHub.recentCommits(5);
+      host.innerHTML = commits.map(c => `
+        <div class="commit-row">
+          <span class="commit-sha">${esc(c.sha)}</span>
+          <span class="commit-msg">${esc(c.message)}</span>
+          <span class="commit-date">${c.date ? new Date(c.date).toLocaleDateString() : ''}</span>
+        </div>`).join('');
+    } catch (err) {
+      host.textContent = 'Could not load recent updates.';
+    }
+  }
+
+  async function connectGitHub() {
+    const token = $('ghToken').value.trim();
+    const msg = $('ghConnectMsg');
+    if (!token) {
+      msg.textContent = 'Paste your token first.';
+      return;
+    }
+    msg.textContent = 'Checking…';
+    GitHub.setToken(token);
+    try {
+      const info = await GitHub.verify();
+      if (!info.canWrite) {
+        GitHub.setToken('');
+        msg.textContent = 'That token cannot edit this repository. Give it "Contents: Read and write".';
+        return;
+      }
+      $('ghToken').value = '';
+      msg.textContent = '';
+      showGitHubState(true, info);
+      refreshHistory();
+      showStatus('Connected to GitHub', 'ok');
+    } catch (err) {
+      GitHub.setToken('');
+      msg.textContent = err.message;
+    }
+  }
+
+  async function publishToGitHub() {
+    const btn = $('ghPublishBtn');
+    readBrandForm();
+
+    const problems = validate();
+    if (problems.length) {
+      resultBox('ghPublishResult', 'err', 'Please fix this first', `<div>${esc(problems[0])}</div>`);
+      return;
+    }
+
+    // Always save locally first, so nothing is lost if the upload fails.
+    Store.save(data);
+    clearDirty();
+
+    btn.disabled = true;
+    const originalText = btn.textContent;
+    btn.textContent = 'Publishing…';
+    resultBox('ghPublishResult', 'ok', 'Uploading your changes to the website…', '');
+
+    try {
+      const result = await GitHub.publishFiles([
+        { path: 'assets/data/menu.csv', content: Store.categoriesToCsv(data.categories) },
+        { path: 'src/core/menu-fallback.js', content: Store.fallbackFileText(data) },
+        { path: 'src/core/config.js', content: Store.configFileText(data) }
+      ], 'Update menu from Admin Panel');
+
+      resultBox('ghPublishResult', 'ok', 'Published successfully',
+        `<div>Your changes are uploaded. The live menu updates in about a minute.</div>
+         <div style="margin-top:6px">
+           <a href="${esc(result.pagesUrl)}" target="_blank" rel="noopener">Open the live menu ↗</a>
+           &nbsp;·&nbsp;
+           <a href="${esc(result.commitUrl)}" target="_blank" rel="noopener">View this update ↗</a>
+         </div>`);
+      showStatus('Published to the website', 'ok');
+      refreshHistory();
+    } catch (err) {
+      resultBox('ghPublishResult', 'err', 'Could not publish',
+        `<div>${esc(err.message)}</div>
+         <div style="margin-top:6px">Your changes are still saved on this device — nothing was lost.
+         You can try again, or use the manual files below.</div>`);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+  }
+
+  if ($('ghConnectBtn')) {
+    $('ghConnectBtn').addEventListener('click', connectGitHub);
+    $('ghToken').addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); connectGitHub(); }
+    });
+    $('ghPublishBtn').addEventListener('click', publishToGitHub);
+    $('ghRefreshBtn').addEventListener('click', refreshHistory);
+    $('ghDisconnectBtn').addEventListener('click', () => {
+      if (!confirm('Disconnect from GitHub? You will need to paste the token again to publish.')) return;
+      GitHub.setToken('');
+      showGitHubState(false);
+      showStatus('Disconnected from GitHub', 'ok');
+    });
+
+    // Restore an existing connection on load.
+    if (GitHub.hasToken()) {
+      GitHub.verify()
+        .then(info => { showGitHubState(true, info); refreshHistory(); })
+        .catch(() => { GitHub.setToken(''); showGitHubState(false); });
+    } else {
+      showGitHubState(false);
+    }
+  }
+
+  /* ---------------- backup & restore ---------------- */
+
+  function backupFileName() {
+    const d = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    return `menu-backup-${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}.json`;
+  }
+
+  if ($('backupBtn')) {
+    $('backupBtn').addEventListener('click', () => {
+      readBrandForm();
+      const payload = {
+        _format: 'new-delhi-darbar-menu-backup',
+        _version: 1,
+        savedAt: new Date().toISOString(),
+        brand: data.brand,
+        notices: data.notices,
+        categories: data.categories
+      };
+      download(backupFileName(), JSON.stringify(payload, null, 2), 'application/json');
+      showStatus('Backup downloaded', 'ok');
+    });
+  }
+
+  if ($('restoreBtn')) {
+    $('restoreBtn').addEventListener('click', () => $('restoreFile').click());
+
+    $('restoreFile').addEventListener('change', e => {
+      const file = e.target.files && e.target.files[0];
+      e.target.value = ''; // allow re-picking the same file
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onerror = () => resultBox('restoreResult', 'err', 'Could not read that file', '');
+      reader.onload = () => {
+        const text = String(reader.result || '');
+        let restored;
+
+        try {
+          if (/\.csv$/i.test(file.name)) {
+            // A bare menu.csv — restores items only, keeps brand/notices.
+            const cats = Store.parseCsvText(text);
+            if (!cats.length) throw new Error('No menu rows found in that CSV file.');
+            restored = { categories: cats };
+          } else {
+            const parsed = JSON.parse(text);
+            if (!parsed || !Array.isArray(parsed.categories)) {
+              throw new Error('That file is not a menu backup.');
+            }
+            restored = parsed;
+          }
+        } catch (err) {
+          resultBox('restoreResult', 'err', 'That file could not be used',
+            `<div>${esc(err.message)}</div><div style="margin-top:6px">Choose a backup file downloaded from this panel, or a menu.csv file.</div>`);
+          return;
+        }
+
+        const itemCount = restored.categories.reduce((n, c) => n + (c.items ? c.items.length : 0), 0);
+        const summary = `${restored.categories.length} categories and ${itemCount} items`;
+        if (!confirm(`Replace the current menu with this backup?\n\nThe backup contains ${summary}.\n\nYour current unsaved changes will be lost.`)) {
+          resultBox('restoreResult', 'ok', 'Restore cancelled — nothing changed', '');
+          return;
+        }
+
+        data.categories = restored.categories.map(c => ({
+          id: c.id || Store.slugify(c.name && c.name.en),
+          idLocked: true,
+          name: Object.assign({ en: '', hi: '', gu: '' }, c.name),
+          items: (c.items || []).map(i => Object.assign({ en: '', hi: '', gu: '', price: '' }, i))
+        }));
+        if (restored.brand) data.brand = restored.brand;
+        if (Array.isArray(restored.notices)) data.notices = restored.notices;
+
+        fillBrandForm();
+        renderCategories();
+        renderNotices();
+        markDirty();
+
+        resultBox('restoreResult', 'ok', 'Backup loaded',
+          `<div>Restored ${esc(summary)}. Check everything looks right, then press
+           <strong>Save &amp; Publish</strong> to keep it.</div>`);
+        showStatus('Backup loaded — remember to publish', 'ok');
+      };
+      reader.readAsText(file);
+    });
+  }
 
   /* ---------------- tabs ---------------- */
 

@@ -161,6 +161,37 @@ async function loadPage(file, storageSeed) {
     eq('partially-known text does not half-translate', G.resolve(partial, 'hi'), 'Chicken Quesadilla');
 
     eq('empty English yields empty output', G.resolve({ en: '', hi: '', gu: '' }, 'hi'), '');
+
+    // Glossary must cover the dishes a real admin is likely to add.
+    const realistic = [
+      'Butter Chicken', 'Chicken Lollipop', 'Mutton Biryani', 'Egg Curry',
+      'Paneer Butter Masala', 'Veg Pulao', 'Tandoori Roti', 'Butter Naan',
+      'Green Salad', 'Masala Papad', 'Sweet Lassi', 'Fresh Lime Soda',
+      'Gulab Jamun', 'Fish Curry', 'Prawn Masala', 'Dal Fry', 'Jeera Rice',
+      'Onion Salad', 'Ice Cream', 'Chicken Soup', 'Veg Manchurian',
+      'Fried Rice', 'Chicken Noodles', 'Chapati', 'Bhindi Masala',
+      'Aloo Gobi', 'Palak Paneer', 'Garlic Naan', 'Paneer Tikka',
+      'Mixed Veg', 'Boneless Chicken', 'Half Plate Chicken', 'Extra Gravy'
+    ];
+    const uncovered = realistic.filter(
+      d => !G.translate(d, 'hi').complete || !G.translate(d, 'gu').complete);
+    eq('glossary covers common Indian menu dishes', uncovered.length, 0, uncovered.join(', '));
+
+    // No duplicate keys (a later duplicate silently shadows the earlier one).
+    const src = fs.readFileSync(path.join(ROOT, 'src/core/glossary.js'), 'utf8');
+    ['PHRASES', 'TERMS'].forEach(name => {
+      const body = src.split(`const ${name} = {`)[1].split('\n  };')[0];
+      const keys = [...body.matchAll(/^\s*'?([a-z0-9 '\-]+)'?\s*:\s*\{/gmi)].map(m => m[1].trim());
+      const dupes = [...new Set(keys.filter((k, i) => keys.indexOf(k) !== i))];
+      eq(`no duplicate keys in ${name}`, dupes.length, 0, dupes.join(', '));
+    });
+
+    // Every entry must define both languages.
+    let incomplete = 0;
+    [G.TERMS, G.PHRASES].forEach(dict => {
+      Object.entries(dict).forEach(([, v]) => { if (!v.hi || !v.gu) incomplete++; });
+    });
+    eq('every glossary entry has both hi and gu', incomplete, 0);
   }
 
   /* ---------------- 2. Customer menu page ---------------- */
@@ -396,7 +427,177 @@ async function loadPage(file, storageSeed) {
       adminRecovered.window.document.querySelectorAll('.cat-card').length === 6);
   }
 
-  /* ---------------- 8. No runtime errors anywhere ---------------- */
+  /* ---------------- 8. Translation UI is understandable ---------------- */
+  {
+    const admin2 = await loadPage('admin.html');
+    const d = admin2.window.document;
+
+    // Plain-language labels, no jargon.
+    const summary = d.getElementById('tsummary').textContent;
+    check('summary avoids the word "Auto"', !/\bAuto\b/.test(summary), summary);
+    check('summary uses plain wording', summary.includes('translated automatically'));
+
+    const panel = d.querySelector('.trans-preview');
+    check('translation panel has a heading', panel.textContent.includes('Other languages'));
+    check('languages are named in full, not codes',
+      panel.textContent.includes('Hindi') && panel.textContent.includes('Gujarati'));
+
+    // Every field must expose a way to change the translation.
+    const editButtons = d.querySelectorAll('.btn-changeit, .btn-fixit');
+    check('every translation row has an edit control',
+      editButtons.length === d.querySelectorAll('.trans-row').length,
+      `${editButtons.length} buttons vs ${d.querySelectorAll('.trans-row').length} rows`);
+
+    // Opening the editor reveals an explanation and an input.
+    const firstEdit = d.querySelector('.btn-changeit, .btn-fixit');
+    firstEdit.click();
+    const opened = d.querySelector('.trans-override.open');
+    check('edit button opens the override editor', !!opened);
+    check('override editor explains what to do',
+      opened.querySelector('.override-help').textContent.length > 30);
+    check('override editor has an input', !!opened.querySelector('input'));
+    check('override editor has a Done button',
+      [...opened.querySelectorAll('button')].some(b => b.textContent === 'Done'));
+
+    // Typing an override and pressing Done must stick and be reported as the admin's own.
+    const input = opened.querySelector('input');
+    input.value = 'मेरा नाम';
+    input.dispatchEvent(new admin2.window.Event('input', { bubbles: true }));
+    [...opened.querySelectorAll('button')].find(b => b.textContent === 'Done').click();
+    const row = d.querySelector('.trans-row');
+    check('override text is shown after saving', row.textContent.includes('मेरा नाम'));
+    check('override is labelled as the admin\'s own', !!d.querySelector('.tstatus.manual'));
+
+    // An untranslatable item must offer a prominent "Type Hindi" action.
+    const catInput = d.querySelector('.cat-card [data-f=en]');
+    catInput.value = 'Zzzz Unknown Dish';
+    catInput.dispatchEvent(new admin2.window.Event('input', { bubbles: true }));
+    const fixIt = catInput.closest('.cat-card').querySelector('.btn-fixit');
+    check('missing translation shows a prominent action', !!fixIt);
+    check('the action names the language', /Type (Hindi|Gujarati)/.test(fixIt.textContent), fixIt.textContent);
+    check('missing translation explains the fallback',
+      catInput.closest('.cat-card').querySelector('.trans-text.is-missing')
+        .textContent.includes('English'));
+  }
+
+  /* ---------------- 9. GitHub publishing ---------------- */
+  {
+    const admin3 = await loadPage('admin.html');
+    const w = admin3.window;
+    const d = w.document;
+    const GH = w.NDDGitHub;
+
+    // UTF-8 safe base64 — plain btoa() corrupts Devanagari/Gujarati.
+    const tricky = 'चिकन मसाला — ચિકન મસાલા';
+    eq('base64 round-trips Indic text', GH.fromBase64(GH.toBase64(tricky)), tricky);
+
+    // Setup guide is shown until connected.
+    check('shows setup guide when not connected', d.getElementById('ghSetup').style.display !== 'none');
+    check('hides publish button when not connected',
+      d.getElementById('ghConnected').style.display === 'none');
+    check('setup guide gives numbered steps',
+      d.querySelectorAll('.setup-steps li').length >= 6);
+    check('setup guide links to the token page',
+      !!d.querySelector('a[href*="personal-access-tokens"]'));
+
+    // Publishing must send exactly the three files, in one commit.
+    const calls = [];
+    w.fetch = async (url, opts) => {
+      calls.push({ url, opts });
+      const body = opts && opts.body ? JSON.parse(opts.body) : {};
+      const json = (o) => ({ ok: true, status: 200, json: async () => o });
+      if (/\/git\/ref\/heads\//.test(url)) return json({ object: { sha: 'headsha' } });
+      if (/\/git\/commits\/headsha/.test(url)) return json({ tree: { sha: 'treesha' } });
+      if (/\/git\/blobs/.test(url)) return json({ sha: 'blob-' + calls.length });
+      if (/\/git\/trees/.test(url)) return json({ sha: 'newtree' });
+      if (/\/git\/commits/.test(url)) return json({ sha: 'abcdef1234567890' });
+      if (/\/git\/refs\/heads\//.test(url)) return json({});
+      if (/\/repos\/[^/]+\/[^/]+$/.test(url)) return json({ full_name: 'anvra/New-Delhi-Darbar-Menu', permissions: { push: true } });
+      if (/\/user$/.test(url)) return json({ login: 'anvra' });
+      if (/\/commits\?/.test(url)) return json([]);
+      return json({});
+    };
+
+    GH.setToken('github_pat_test');
+    const info = await GH.verify();
+    eq('verify reports the account', info.login, 'anvra');
+    check('verify detects write access', info.canWrite === true);
+
+    calls.length = 0;
+    const res = await GH.publishFiles([
+      { path: 'assets/data/menu.csv', content: 'a,b\n1,2\n' },
+      { path: 'src/core/menu-fallback.js', content: '// x' },
+      { path: 'src/core/config.js', content: '// y' }
+    ], 'Update menu from Admin Panel');
+
+    const blobCalls = calls.filter(c => /\/git\/blobs/.test(c.url));
+    eq('uploads one blob per file', blobCalls.length, 3);
+    const treeCall = calls.find(c => /\/git\/trees/.test(c.url));
+    const treePaths = JSON.parse(treeCall.opts.body).tree.map(t => t.path);
+    check('commits menu.csv to the right path', treePaths.includes('assets/data/menu.csv'));
+    check('commits fallback to the right path', treePaths.includes('src/core/menu-fallback.js'));
+    check('commits config to the right path', treePaths.includes('src/core/config.js'));
+    eq('creates exactly one commit', calls.filter(c => /\/git\/commits$/.test(c.url)).length, 1);
+    check('moves the branch to the new commit',
+      calls.some(c => /\/git\/refs\/heads\//.test(c.url) && c.opts.method === 'PATCH'));
+    eq('returns the pages url', res.pagesUrl, 'https://anvra.github.io/New-Delhi-Darbar-Menu/');
+    check('returns a short sha', res.sha.length === 7);
+
+    // Blob content must survive as valid UTF-8 through base64.
+    const sent = JSON.parse(blobCalls[0].opts.body);
+    eq('blob encoding declared', sent.encoding, 'base64');
+    eq('blob content round-trips', GH.fromBase64(sent.content), 'a,b\n1,2\n');
+
+    // Errors must be explained in plain language, not raw status codes.
+    w.fetch = async () => ({ ok: false, status: 401, json: async () => ({ message: 'Bad credentials' }) });
+    let msg = '';
+    try { await GH.verify(); } catch (e) { msg = e.message; }
+    check('401 produces a human explanation', /token/i.test(msg) && !/401/.test(msg), msg);
+
+    w.fetch = async () => ({ ok: false, status: 403, json: async () => ({}) });
+    try { await GH.verify(); } catch (e) { msg = e.message; }
+    check('403 mentions the needed permission', /permission/i.test(msg), msg);
+
+    GH.setToken('');
+    check('clearing the token disconnects', !GH.hasToken());
+  }
+
+  /* ---------------- 10. Backup & restore ---------------- */
+  {
+    const admin4 = await loadPage('admin.html');
+    const w = admin4.window;
+    const d = w.document;
+
+    check('backup button exists', !!d.getElementById('backupBtn'));
+    check('restore button exists', !!d.getElementById('restoreBtn'));
+
+    // Capture the generated backup instead of downloading it.
+    let captured = null;
+    const realCreate = w.URL.createObjectURL;
+    w.Blob = class { constructor(parts) { captured = parts.join(''); } };
+    w.URL.createObjectURL = () => 'blob:x';
+    d.getElementById('backupBtn').click();
+    w.URL.createObjectURL = realCreate;
+
+    check('backup produced a file', !!captured);
+    const backup = JSON.parse(captured);
+    eq('backup is tagged with its format', backup._format, 'new-delhi-darbar-menu-backup');
+    eq('backup contains every category', backup.categories.length, 6);
+    check('backup contains brand details', backup.brand.name === 'New Delhi Darbar');
+    check('backup contains notices', Array.isArray(backup.notices) && backup.notices.length === 2);
+    const backedUpItems = backup.categories.reduce((n, c) => n + c.items.length, 0);
+    eq('backup contains every item', backedUpItems, 23);
+
+    // Restoring that backup must reproduce the same menu.
+    const Store2 = w.NDDStore;
+    const roundTrip = Store2.parseCsvText(Store2.categoriesToCsv(backup.categories));
+    eq('backup restores the same category count', roundTrip.length, 6);
+    eq('backup restores the same item count',
+      roundTrip.reduce((n, c) => n + c.items.length, 0), 23);
+    eq('backup preserves the first item name', roundTrip[0].items[0].en, 'Chicken Masala');
+  }
+
+  /* ---------------- 11. No runtime errors anywhere ---------------- */
   eq('customer page raised no console errors', menu.consoleErrors.length, 0,
     menu.consoleErrors.join(' | '));
   eq('admin page raised no console errors', admin.consoleErrors.length, 0,

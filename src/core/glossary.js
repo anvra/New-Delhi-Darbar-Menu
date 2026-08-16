@@ -62,7 +62,58 @@
     // Beverages
     'mineral water': { hi: 'मिनरल वाटर',      gu: 'મિનરલ વોટર' },
     'jeera':         { hi: 'जीरा',            gu: 'જીરા' },
-    'soft drinks':   { hi: 'सॉफ्ट ड्रिंक्स',  gu: 'સોફ્ટ ડ્રિંક્સ' }
+    'soft drinks':   { hi: 'सॉफ्ट ड्रिंक्स',  gu: 'સોફ્ટ ડ્રિંક્સ' },
+
+    /* --- Common dish names --- */
+    'do pyaza':      { hi: 'दो प्याज़ा',     gu: 'દો પ્યાઝા' },
+    'fried rice':    { hi: 'फ्राइड राइस',   gu: 'ફ્રાઇડ રાઇસ' },
+    'spring roll':   { hi: 'स्प्रिंग रोल',  gu: 'સ્પ્રિંગ રોલ' },
+    'spring rolls':  { hi: 'स्प्रिंग रोल',  gu: 'સ્પ્રિંગ રોલ' },
+
+    /* --- Breads --- */
+    'tandoori roti': { hi: 'तंदूरी रोटी',   gu: 'તંદૂરી રોટી' },
+    'butter roti':   { hi: 'बटर रोटी',      gu: 'બટર રોટી' },
+    'butter naan':   { hi: 'बटर नान',       gu: 'બટર નાન' },
+    'garlic naan':   { hi: 'गार्लिक नान',   gu: 'ગાર્લિક નાન' },
+
+    /* --- Rice --- */
+    'steamed rice':  { hi: 'स्टीम्ड राइस',  gu: 'સ્ટીમ્ડ રાઇસ' },
+    'jeera rice':    { hi: 'जीरा राइस',     gu: 'જીરા રાઇસ' },
+    'curd rice':     { hi: 'दही चावल',      gu: 'દહીં ભાત' },
+
+    /* --- Desserts --- */
+    'gulab jamun':   { hi: 'गुलाब जामुन',   gu: 'ગુલાબ જાંબુ' },
+    'ice cream':     { hi: 'आइसक्रीम',      gu: 'આઈસ્ક્રીમ' },
+
+    /* --- Beverages --- */
+    'sweet lassi':     { hi: 'मीठी लस्सी',    gu: 'મીઠી લસ્સી' },
+    'salted lassi':    { hi: 'नमकीन लस्सी',   gu: 'નમકીન લસ્સી' },
+    'lime soda':       { hi: 'लाइम सोडा',     gu: 'લાઇમ સોડા' },
+    'fresh lime':      { hi: 'फ्रेश लाइम',    gu: 'ફ્રેશ લાઇમ' },
+    'fresh lime soda': { hi: 'फ्रेश लाइम सोडा', gu: 'ફ્રેશ લાઇમ સોડા' },
+    'sugarcane juice': { hi: 'गन्ने का रस',   gu: 'શેરડીનો રસ' },
+    'coconut water':   { hi: 'नारियल पानी',   gu: 'નાળિયેર પાણી' },
+    'iced tea':        { hi: 'आइस्ड टी',      gu: 'આઈસ્ડ ટી' },
+    'green tea':       { hi: 'ग्रीन टी',      gu: 'ગ્રીન ટી' },
+    'masala tea':      { hi: 'मसाला चाय',     gu: 'મસાલા ચા' },
+    'masala chai':     { hi: 'मसाला चाय',     gu: 'મસાલા ચા' },
+
+    /* --- Descriptors & menu sections --- */
+    'with bone':       { hi: 'हड्डी के साथ',  gu: 'હાડકાં સાથે' },
+    'chef special':    { hi: 'शेफ स्पेशल',    gu: 'શેફ સ્પેશિયલ' },
+    "chef's special":  { hi: 'शेफ स्पेशल',    gu: 'શેફ સ્પેશિયલ' },
+    "today's special": { hi: 'आज का स्पेशल',  gu: 'આજની સ્પેશિયલ' },
+    'stir fried':      { hi: 'स्टर फ्राइड',   gu: 'સ્ટર ફ્રાઇડ' },
+    'deep fried':      { hi: 'डीप फ्राइड',    gu: 'ડીપ ફ્રાઇડ' },
+    'shallow fried':   { hi: 'शैलो फ्राइड',   gu: 'શેલો ફ્રાઇડ' },
+    'main course':     { hi: 'मेन कोर्स',     gu: 'મેઇન કોર્સ' },
+    'side dish':       { hi: 'साइड डिश',      gu: 'સાઇડ ડિશ' },
+    'side dishes':     { hi: 'साइड डिश',      gu: 'સાઇડ ડિશ' },
+    'non veg':         { hi: 'नॉन-वेज',       gu: 'નોન-વેજ' },
+    'non-veg':         { hi: 'नॉन-वेज',       gu: 'નોન-વેજ' },
+    'semi dry':        { hi: 'सेमी ड्राई',    gu: 'સેમી ડ્રાય' },
+    'half plate':      { hi: 'हाफ प्लेट',     gu: 'હાફ પ્લેટ' },
+    'full plate':      { hi: 'फुल प्लेट',     gu: 'ફુલ પ્લેટ' }
   };
 
   // Word-level translations, used to compose names not covered by PHRASES.
@@ -133,7 +184,170 @@
     items:      { hi: 'आइटम',      gu: 'આઇટમ' },
     na:         { hi: 'के',        gu: 'ના' },
     and:        { hi: 'और',        gu: 'અને' },
-    with:       { hi: 'के साथ',    gu: 'સાથે' }
+    with:       { hi: 'के साथ',    gu: 'સાથે' },
+
+    /* --- Vegetables --- */
+    onion:       { hi: 'प्याज',      gu: 'ડુંગળી' },
+    tomato:      { hi: 'टमाटर',      gu: 'ટામેટા' },
+    potato:      { hi: 'आलू',        gu: 'બટાકા' },
+    aloo:        { hi: 'आलू',        gu: 'બટાકા' },
+    spinach:     { hi: 'पालक',       gu: 'પાલક' },
+    palak:       { hi: 'पालक',       gu: 'પાલક' },
+    okra:        { hi: 'भिंडी',      gu: 'ભીંડા' },
+    bhindi:      { hi: 'भिंडी',      gu: 'ભીંડા' },
+    cauliflower: { hi: 'गोभी',       gu: 'ફ્લાવર' },
+    gobi:        { hi: 'गोभी',       gu: 'ગોબી' },
+    peas:        { hi: 'मटर',        gu: 'વટાણા' },
+    matar:       { hi: 'मटर',        gu: 'મટર' },
+    brinjal:     { hi: 'बैंगन',      gu: 'રીંગણ' },
+    eggplant:    { hi: 'बैंगन',      gu: 'રીંગણ' },
+    cabbage:     { hi: 'पत्ता गोभी', gu: 'કોબીજ' },
+    carrot:      { hi: 'गाजर',       gu: 'ગાજર' },
+    mushroom:    { hi: 'मशरूम',      gu: 'મશરૂમ' },
+    corn:        { hi: 'मक्का',      gu: 'મકાઈ' },
+    garlic:      { hi: 'लहसुन',      gu: 'લસણ' },
+    ginger:      { hi: 'अदरक',       gu: 'આદુ' },
+    chilli:      { hi: 'मिर्च',      gu: 'મરચાં' },
+    chili:       { hi: 'मिर्च',      gu: 'મરચાં' },
+    lemon:       { hi: 'नींबू',      gu: 'લીંબુ' },
+    lime:        { hi: 'नींबू',      gu: 'લીંબુ' },
+    coriander:   { hi: 'धनिया',      gu: 'કોથમીર' },
+    mint:        { hi: 'पुदीना',     gu: 'ફુદીનો' },
+
+    /* --- Dairy & proteins --- */
+    butter:     { hi: 'बटर',      gu: 'બટર' },
+    cheese:     { hi: 'चीज़',      gu: 'ચીઝ' },
+    cream:      { hi: 'क्रीम',    gu: 'ક્રીમ' },
+    curd:       { hi: 'दही',      gu: 'દહીં' },
+    yogurt:     { hi: 'दही',      gu: 'દહીં' },
+    milk:       { hi: 'दूध',      gu: 'દૂધ' },
+    buttermilk: { hi: 'छाछ',      gu: 'છાશ' },
+    chaas:      { hi: 'छाछ',      gu: 'છાશ' },
+    ghee:       { hi: 'घी',       gu: 'ઘી' },
+    omelette:   { hi: 'ऑमलेट',    gu: 'ઓમલેટ' },
+    omlet:      { hi: 'ऑमलेट',    gu: 'ઓમલેટ' },
+
+    /* --- Dishes & preparations --- */
+    pulao:      { hi: 'पुलाव',     gu: 'પુલાવ' },
+    korma:      { hi: 'कोरमा',     gu: 'કોરમા' },
+    vindaloo:   { hi: 'विंदालू',   gu: 'વિંદાલૂ' },
+    jalfrezi:   { hi: 'जालफ्रेजी', gu: 'જાલફ્રેજી' },
+    handi:      { hi: 'हांडी',     gu: 'હાંડી' },
+    tawa:       { hi: 'तवा',       gu: 'તવા' },
+    sizzler:    { hi: 'सिजलर',     gu: 'સિઝલર' },
+    lollipop:   { hi: 'लॉलीपॉप',   gu: 'લોલીપોપ' },
+    manchurian: { hi: 'मंचूरियन',  gu: 'મંચૂરિયન' },
+    schezwan:   { hi: 'शेजवान',    gu: 'શેજવાન' },
+    chowmein:   { hi: 'चाउमीन',    gu: 'ચાઉમીન' },
+    noodles:    { hi: 'नूडल्स',    gu: 'નૂડલ્સ' },
+    // In Gujarat these are universally "bhajiya" on menus, not a transliteration.
+    pakora:     { hi: 'पकोड़ा',     gu: 'ભજીયા' },
+    bhajiya:    { hi: 'पकोड़ा',     gu: 'ભજીયા' },
+    samosa:     { hi: 'समोसा',     gu: 'સમોસા' },
+    cutlet:     { hi: 'कटलेट',     gu: 'કટલેટ' },
+    roll:       { hi: 'रोल',       gu: 'રોલ' },
+    wrap:       { hi: 'रैप',       gu: 'રેપ' },
+    sandwich:   { hi: 'सैंडविच',   gu: 'સેન્ડવીચ' },
+    burger:     { hi: 'बर्गर',     gu: 'બર્ગર' },
+    pizza:      { hi: 'पिज़्ज़ा',   gu: 'પિઝ્ઝા' },
+    momos:      { hi: 'मोमोज़',     gu: 'મોમોઝ' },
+    thali:      { hi: 'थाली',      gu: 'થાળી' },
+    combo:      { hi: 'कॉम्बो',    gu: 'કોમ્બો' },
+    platter:    { hi: 'प्लेटर',    gu: 'પ્લેટર' },
+
+    /* --- Breads --- */
+    chapati: { hi: 'चपाती',  gu: 'ચપાતી' },
+    phulka:  { hi: 'फुल्का', gu: 'ફુલકા' },
+    kulcha:  { hi: 'कुलचा',  gu: 'કુલચા' },
+    bhatura: { hi: 'भटूरा',  gu: 'ભટૂરા' },
+    puri:    { hi: 'पूरी',   gu: 'પુરી' },
+    bhakri:  { hi: 'भाखरी',  gu: 'ભાખરી' },
+    thepla:  { hi: 'थेपला',  gu: 'થેપલા' },
+    khakhra: { hi: 'खाखरा',  gu: 'ખાખરા' },
+
+    /* --- Rice --- */
+    khichdi: { hi: 'खिचड़ी', gu: 'ખીચડી' },
+
+    /* --- Desserts --- */
+    rasgulla:  { hi: 'रसगुल्ला', gu: 'રસગુલ્લા' },
+    kulfi:     { hi: 'कुल्फी',   gu: 'કુલ્ફી' },
+    halwa:     { hi: 'हलवा',     gu: 'હલવો' },
+    shrikhand: { hi: 'श्रीखंड',  gu: 'શ્રીખંડ' },
+    basundi:   { hi: 'बासुंदी',  gu: 'બાસુંદી' },
+    jalebi:    { hi: 'जलेबी',    gu: 'જલેબી' },
+    dessert:   { hi: 'मिठाई',    gu: 'મીઠાઈ' },
+
+    /* --- Beverages --- */
+    milkshake: { hi: 'मिल्कशेक',  gu: 'મિલ્કશેક' },
+    falooda:   { hi: 'फालूदा',    gu: 'ફાલુદા' },
+    soda:      { hi: 'सोडा',      gu: 'સોડા' },
+    mocktail:  { hi: 'मॉकटेल',    gu: 'મોકટેલ' },
+
+    /* --- Descriptors --- */
+    spicy:     { hi: 'तीखा',       gu: 'તીખું' },
+    mild:      { hi: 'कम तीखा',    gu: 'ઓછું તીખું' },
+    sweet:     { hi: 'मीठा',       gu: 'મીઠું' },
+    salted:    { hi: 'नमकीन',      gu: 'નમકીન' },
+    sour:      { hi: 'खट्टा',      gu: 'ખાટું' },
+    tangy:     { hi: 'चटपटा',      gu: 'ચટપટું' },
+    crispy:    { hi: 'कुरकुरा',    gu: 'કરકરું' },
+    stuffed:   { hi: 'भरवां',      gu: 'ભરેલું' },
+    mixed:     { hi: 'मिक्स',      gu: 'મિક્સ' },
+    assorted:  { hi: 'असॉर्टेड',   gu: 'એસોર્ટેડ' },
+    half:      { hi: 'आधा',        gu: 'અડધું' },
+    full:      { hi: 'फुल',        gu: 'ફુલ' },
+    quarter:   { hi: 'क्वार्टर',   gu: 'ક્વાર્ટર' },
+    small:     { hi: 'छोटा',       gu: 'નાનું' },
+    large:     { hi: 'बड़ा',        gu: 'મોટું' },
+    regular:   { hi: 'रेगुलर',     gu: 'રેગ્યુલર' },
+    jumbo:     { hi: 'जंबो',       gu: 'જંબો' },
+    family:    { hi: 'फैमिली',     gu: 'ફેમિલી' },
+    single:    { hi: 'सिंगल',      gu: 'સિંગલ' },
+    double:    { hi: 'डबल',        gu: 'ડબલ' },
+    extra:     { hi: 'एक्स्ट्रा',  gu: 'એક્સ્ટ્રા' },
+    without:   { hi: 'बिना',       gu: 'વગર' },
+    boneless:  { hi: 'बोनलेस',     gu: 'બોનલેસ' },
+    seasonal:  { hi: 'मौसमी',      gu: 'મોસમી' },
+    boiled:    { hi: 'उबला',       gu: 'બાફેલું' },
+    baked:     { hi: 'बेक्ड',      gu: 'બેક્ડ' },
+    steamed:   { hi: 'स्टीम्ड',    gu: 'સ્ટીમ્ડ' },
+
+    /* --- Menu sections --- */
+    starter:    { hi: 'स्टार्टर',    gu: 'સ્ટાર્ટર' },
+    starters:   { hi: 'स्टार्टर',    gu: 'સ્ટાર્ટર' },
+    appetizer:  { hi: 'एपेटाइज़र',   gu: 'એપેટાઇઝર' },
+    snack:      { hi: 'नाश्ता',      gu: 'નાસ્તો' },
+    snacks:     { hi: 'नाश्ता',      gu: 'નાસ્તો' },
+    breakfast:  { hi: 'नाश्ता',      gu: 'નાસ્તો' },
+    lunch:      { hi: 'लंच',         gu: 'લંચ' },
+    dinner:     { hi: 'डिनर',        gu: 'ડિનર' },
+    jain:       { hi: 'जैन',         gu: 'જૈન' },
+    vegan:      { hi: 'वीगन',        gu: 'વીગન' },
+    roast:      { hi: 'रोस्ट',       gu: 'રોસ્ટ' },
+    sides:      { hi: 'साइड डिश',    gu: 'સાઇડ ડિશ' },
+    extras:     { hi: 'एक्स्ट्रा',   gu: 'એક્સ્ટ્રા' },
+
+    /* --- Colours & misc modifiers --- */
+    green:   { hi: 'हरा',      gu: 'લીલું' },
+    red:     { hi: 'लाल',      gu: 'લાલ' },
+    white:   { hi: 'सफेद',     gu: 'સફેદ' },
+    black:   { hi: 'काला',     gu: 'કાળું' },
+    yellow:  { hi: 'पीला',     gu: 'પીળું' },
+    classic: { hi: 'क्लासिक',  gu: 'ક્લાસિક' },
+
+    /* --- Units & serving --- */
+    plate:   { hi: 'प्लेट',     gu: 'પ્લેટ' },
+    bowl:    { hi: 'कटोरी',     gu: 'વાટકી' },
+    glass:   { hi: 'गिलास',     gu: 'ગ્લાસ' },
+    bottle:  { hi: 'बोतल',      gu: 'બોટલ' },
+    cup:     { hi: 'कप',        gu: 'કપ' },
+    kg:      { hi: 'किलो',      gu: 'કિલો' },
+    gram:    { hi: 'ग्राम',     gu: 'ગ્રામ' },
+    litre:   { hi: 'लीटर',      gu: 'લિટર' },
+    per:     { hi: 'प्रति',     gu: 'દીઠ' },
+    each:    { hi: 'प्रत्येक',  gu: 'દરેક' },
+    portion: { hi: 'पोर्शन',    gu: 'પોર્શન' },
+    serving: { hi: 'सर्विंग',   gu: 'સર્વિંગ' }
   };
 
   const LANGS = ['en', 'hi', 'gu'];
