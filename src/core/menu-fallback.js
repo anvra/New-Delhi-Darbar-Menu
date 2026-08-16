@@ -21,7 +21,7 @@ window.NDD_MENU_CSV_FALLBACK = `category_order,category_id,category_en,category_
 3,fish,Fish Item,,,3,Seasonal Fish Fry,,,100 Rs / plate
 4,rice,Rice,,,1,Biryani Rice,,,30 Rs / plate
 4,rice,Rice,,,2,Plain Rice,,,30 Rs / plate
-5,roti,Roti,,,1,Plain Roti,,,7 Rs / pc
+5,roti,Roti,,,1,Plain Roti,,,5 Rs / pc
 5,roti,Roti,,,2,Chokha na Rotla,,,7 Rs / pc
 5,roti,Roti,,,3,Chokha na Pudaa,,,6 Rs / pc
 6,beverages,Cold Beverages,,,1,Mineral Water,,,10/20 Rs
