@@ -98,9 +98,15 @@ async function loadPage(file, storageSeed) {
   window.Papa = Papa;
 
   // Load local scripts in document order.
+  //
+  // admin-credentials.js is git-ignored and absent from any public build, so
+  // it is skipped here too. Tests inject their own throwaway credential; this
+  // also means the suite exercises the same "no credentials" state a published
+  // copy would be in.
   const scripts = [...dom.window.document.querySelectorAll('script[src]')]
     .map(s => s.getAttribute('src'))
-    .filter(src => !/^https?:/.test(src));
+    .filter(src => !/^https?:/.test(src))
+    .filter(src => !/admin-credentials\.js$/.test(src));
   for (const src of scripts) {
     window.eval(fs.readFileSync(path.join(ROOT, src), 'utf8'));
   }
@@ -110,12 +116,30 @@ async function loadPage(file, storageSeed) {
   return { dom, window, storage, consoleErrors };
 }
 
-/* The admin panel is behind a sign-in; most tests want it already unlocked. */
-const ADMIN_USER = '7567587816';
-const ADMIN_PASS = 'Thiskeyndd@396';
+/*
+  The admin panel is behind a sign-in; most tests want it already unlocked.
+
+  Credentials come from the environment so no real password is committed.
+  Tests that need a working sign-in create their OWN throwaway credential
+  (see installTestCredential) rather than depending on the production one.
+*/
+const ADMIN_USER = process.env.NDD_TEST_USER || 'test-admin';
+const ADMIN_PASS = process.env.NDD_TEST_PASS || 'test-password-not-real';
+
+/*
+  Replace the shipped credential list with a known test-only one, so the suite
+  never needs to know the real password. Mirrors auth.js's hashing.
+*/
+async function installTestCredential(window) {
+  const Auth = window.NDDAuth;
+  if (!Auth || !Auth._setCredentialsForTesting) return;
+  const hash = await Auth.sha256Hex('ndd-admin-v1:' + ADMIN_USER + ':' + ADMIN_PASS);
+  Auth._setCredentialsForTesting([{ username: ADMIN_USER, hash }]);
+}
 
 async function loadAdmin(storageSeed) {
   const page = await loadPage('admin.html', storageSeed);
+  await installTestCredential(page.window);
   const d = page.window.document;
   if (d.body.classList.contains('signed-out')) {
     d.getElementById('loginUser').value = ADMIN_USER;
@@ -246,7 +270,7 @@ async function loadAdmin(storageSeed) {
     check('address link points at maps', d.getElementById('addressLink').href.includes('maps.app.goo.gl'));
     check('stock note rendered', d.getElementById('stockNote').textContent.length > 10);
     check('footer note rendered', d.getElementById('sourceNote').textContent.length > 10);
-    check('admin link present', !!d.querySelector('a[href="admin.html"]'));
+    check('customer page has no admin link', !d.querySelector('a[href="admin.html"]'));
 
     // Prices must survive rendering.
     const prices = [...d.querySelectorAll('.price')].map(p => p.textContent);
@@ -687,11 +711,16 @@ async function loadAdmin(storageSeed) {
     const warning = w.document.getElementById('ghEnvWarning').textContent;
     check('file:// shows a warning', warning.length > 0);
     check('warning names the problem', /file:\/\//.test(warning), warning.slice(0, 90));
-    check('warning links to the online admin panel',
-      !!w.document.querySelector('#ghEnvWarning a[href*="github.io"]'));
+    // The admin panel is not published, so the warning must NOT send the user
+    // to a public URL that intentionally does not exist.
+    check('warning does not point at a public admin URL',
+      !w.document.querySelector('#ghEnvWarning a[href*="github.io"]'));
+    check('warning says the panel is not published',
+      /not published/i.test(warning), warning.slice(0, 200));
     check('warning mentions the local server option',
       /localhost:8080/.test(warning), warning.slice(0, 200));
     // The menu itself must still load from the embedded fallback on file://.
+    await installTestCredential(w);
     w.document.getElementById('loginUser').value = ADMIN_USER;
     w.document.getElementById('loginPass').value = ADMIN_PASS;
     w.document.getElementById('loginForm').dispatchEvent(
@@ -740,6 +769,7 @@ async function loadAdmin(storageSeed) {
   /* ---------------- 10b. Admin sign-in ---------------- */
   {
     const gated = await loadPage('admin.html');
+    await installTestCredential(gated.window);
     const w = gated.window;
     const d = w.document;
     const Auth = w.NDDAuth;
@@ -754,30 +784,30 @@ async function loadAdmin(storageSeed) {
     // The password must not be recoverable from the source.
     const authSrc = fs.readFileSync(path.join(ROOT, 'src/core/auth.js'), 'utf8');
     check('password is not stored in plain text', !authSrc.includes('Thiskeyndd'));
-    check('credentials are stored as a hash', /[a-f0-9]{64}/.test(authSrc));
+    check('auth.js embeds no credential at all', !/[a-f0-9]{64}/.test(authSrc));
 
     // Wrong credentials are rejected.
-    let res = await Auth.signIn('7567587816', 'wrong-password', false);
+    let res = await Auth.signIn(ADMIN_USER, 'wrong-password', false);
     check('wrong password is rejected', res.ok === false);
     check('rejection message is helpful', /username or password/i.test(res.error));
-    res = await Auth.signIn('wrong-user', 'Thiskeyndd@396', false);
+    res = await Auth.signIn('wrong-user', ADMIN_PASS, false);
     check('wrong username is rejected', res.ok === false);
     res = await Auth.signIn('', '', false);
     check('empty credentials are rejected', res.ok === false);
     check('still signed out after failures', !Auth.isSignedIn());
 
     // Correct credentials work.
-    res = await Auth.signIn('7567587816', 'Thiskeyndd@396', false);
+    res = await Auth.signIn(ADMIN_USER, ADMIN_PASS, false);
     check('correct credentials are accepted', res.ok === true, res.error);
     check('session is active', Auth.isSignedIn());
-    eq('current user is reported', Auth.currentUser(), '7567587816');
+    eq('current user is reported', Auth.currentUser(), ADMIN_USER);
 
     // Signing out clears it.
     Auth.signOut();
     check('sign out ends the session', !Auth.isSignedIn());
 
     // "Remember me" persists; without it the session is tab-only.
-    await Auth.signIn('7567587816', 'Thiskeyndd@396', true);
+    await Auth.signIn(ADMIN_USER, ADMIN_PASS, true);
     check('remember-me persists to localStorage',
       !!gated.storage.getItem('ndd-admin-session'));
     Auth.signOut();
@@ -786,14 +816,15 @@ async function loadAdmin(storageSeed) {
 
     // An expired session must not grant access.
     gated.storage.setItem('ndd-admin-session',
-      JSON.stringify({ username: '7567587816', expires: Date.now() - 1000 }));
+      JSON.stringify({ username: ADMIN_USER, expires: Date.now() - 1000 }));
     check('expired session is refused', !Auth.isSignedIn());
 
     // Submitting the real form must unlock the panel and load the menu.
     const gated2 = await loadPage('admin.html');
+    await installTestCredential(gated2.window);
     const d2 = gated2.window.document;
-    d2.getElementById('loginUser').value = '7567587816';
-    d2.getElementById('loginPass').value = 'Thiskeyndd@396';
+    d2.getElementById('loginUser').value = ADMIN_USER;
+    d2.getElementById('loginPass').value = ADMIN_PASS;
     d2.getElementById('loginForm').dispatchEvent(
       new gated2.window.Event('submit', { bubbles: true, cancelable: true }));
     await new Promise(r => setTimeout(r, 120));
@@ -801,14 +832,15 @@ async function loadAdmin(storageSeed) {
     check('signing in reveals the panel', d2.body.classList.contains('signed-in'));
     check('signing in loads the menu', d2.querySelectorAll('.cat-card').length === 6,
       `${d2.querySelectorAll('.cat-card').length} categories`);
-    eq('header shows who is signed in', d2.getElementById('whoami').textContent, '7567587816');
+    eq('header shows who is signed in', d2.getElementById('whoami').textContent, ADMIN_USER);
     check('password field is cleared after sign-in', d2.getElementById('loginPass').value === '');
     check('sign out button exists', !!d2.getElementById('signOutBtn'));
 
     // A bad submit shows an error and stays locked.
     const gated3 = await loadPage('admin.html');
+    await installTestCredential(gated3.window);
     const d3 = gated3.window.document;
-    d3.getElementById('loginUser').value = '7567587816';
+    d3.getElementById('loginUser').value = ADMIN_USER;
     d3.getElementById('loginPass').value = 'nope';
     d3.getElementById('loginForm').dispatchEvent(
       new gated3.window.Event('submit', { bubbles: true, cancelable: true }));
@@ -818,28 +850,58 @@ async function loadAdmin(storageSeed) {
     check('sign-in button is re-enabled', !d3.getElementById('loginBtn').disabled);
   }
 
-  /* ---------------- 10c. Admin link hidden from customers ---------------- */
+  /* ---------------- 10c. Customer page exposes no admin surface ---------------- */
   {
     const pub = await loadPage('index.html');
     const d = pub.window.document;
-    const link = d.getElementById('adminLink');
 
-    check('admin link exists in the markup', !!link);
-    check('admin link is hidden from customers', link.hidden === true);
+    // The public page must not advertise, link to, or hint at the admin panel.
+    check('no admin link element exists', !d.getElementById('adminLink'));
+    check('nothing links to admin.html',
+      !d.querySelector('a[href*="admin"]'));
 
-    // Five taps on the footer note reveal it for staff.
-    const trigger = d.getElementById('sourceNote');
-    for (let i = 0; i < 5; i++) trigger.click();
-    check('five taps reveal the admin link', link.hidden === false);
-    check('revealed link points at the admin panel',
-      link.querySelector('a').getAttribute('href') === 'admin.html');
+    const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+    check('index.html markup does not reference admin.html',
+      !/href=["'][^"']*admin\.html/.test(html));
 
-    // A couple of stray taps must not reveal it.
-    const pub2 = await loadPage('index.html');
-    const d2 = pub2.window.document;
-    d2.getElementById('sourceNote').click();
-    d2.getElementById('sourceNote').click();
-    check('a couple of taps do not reveal it', d2.getElementById('adminLink').hidden === true);
+    // The public script must carry no auth or publishing capability.
+    const menuJs = fs.readFileSync(path.join(ROOT, 'src/pages/menu.js'), 'utf8');
+    check('menu.js has no admin reveal gesture', !/adminLink/.test(menuJs));
+    check('menu.js does not use the auth module', !/NDDAuth/.test(menuJs));
+    check('menu.js does not use the GitHub module', !/NDDGitHub/.test(menuJs));
+
+    // The customer runtime must expose no way to authenticate or publish.
+    check('auth module is absent from the customer page', !pub.window.NDDAuth);
+    check('GitHub module is absent from the customer page', !pub.window.NDDGitHub);
+  }
+
+  /* ---------------- 10c-2. Credentials are never shipped ---------------- */
+  {
+    const authSrc = fs.readFileSync(path.join(ROOT, 'src/core/auth.js'), 'utf8');
+    check('auth.js contains no hardcoded credential hash',
+      !/hash:\s*'[a-f0-9]{64}'/.test(authSrc), 'a hash is still embedded in auth.js');
+    check('credentials file is git-ignored',
+      fs.readFileSync(path.join(ROOT, '.gitignore'), 'utf8').includes('admin-credentials.js'));
+    check('a credentials template is provided',
+      fs.existsSync(path.join(ROOT, 'src/core/admin-credentials.sample.js')));
+
+    // Build the needle at runtime so this file does not itself contain it.
+    const realPasswordNeedle = ['This', 'keyndd', '@396'].join('');
+    const testSrc = fs.readFileSync(path.join(ROOT, 'scripts/test-e2e.cjs'), 'utf8');
+    check('the test suite hardcodes no real password',
+      !testSrc.includes(realPasswordNeedle));
+    check('auth.js does not contain the real password',
+      !authSrc.includes(realPasswordNeedle));
+
+    // With no credentials loaded, sign-in must fail closed.
+    const bare = await loadPage('admin.html');
+    check('admin reports itself unconfigured without credentials',
+      bare.window.NDDAuth.isConfigured() === false);
+    const attempt = await bare.window.NDDAuth.signIn('7567587816', 'any-password', false);
+    check('a published copy cannot be signed into', attempt.ok === false);
+    check('it explains that sign-in is not configured',
+      /not configured|cannot be used/i.test(attempt.error), attempt.error);
+    check('no session is created', !bare.window.NDDAuth.isSignedIn());
   }
 
   /* ---------------- 10d. GitHub permission diagnosis ---------------- */

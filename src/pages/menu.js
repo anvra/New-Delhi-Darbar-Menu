@@ -339,26 +339,11 @@
   });
 
   /*
-    Staff shortcut to the admin panel, hidden from customers.
-    Press the footer note five times quickly to reveal the link — this keeps a
-    phone-friendly route in without advertising it on the public menu.
-  */
-  (() => {
-    const trigger = document.getElementById('sourceNote');
-    const adminLink = document.getElementById('adminLink');
-    if (!trigger || !adminLink) return;
+    Deliberately no admin shortcut here.
 
-    let taps = 0;
-    let timer = 0;
-    trigger.addEventListener('click', () => {
-      taps++;
-      clearTimeout(timer);
-      timer = setTimeout(() => { taps = 0; }, 1500);
-      if (taps >= 5) {
-        taps = 0;
-        adminLink.hidden = false;
-        adminLink.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-      }
-    });
-  })();
+    This script is served on the public menu, so any hidden gesture that
+    revealed an admin route would be readable in the page source and would only
+    advertise an entry point. The public build ships no admin panel at all;
+    staff use the private admin environment.
+  */
 })();

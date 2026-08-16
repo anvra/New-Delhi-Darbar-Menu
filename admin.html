@@ -298,6 +298,11 @@
 <script src="src/core/i18n.js"></script>
 <script src="src/core/store.js"></script>
 <script src="src/core/github.js"></script>
+<!--
+  Local-only credentials. Absent from any public build, which is what makes
+  the published copy unusable for editing. Errors on 404 are expected there.
+-->
+<script src="src/core/admin-credentials.js" onerror="void 0"></script>
 <script src="src/core/auth.js"></script>
 <script src="src/pages/admin.js"></script>
 </body>

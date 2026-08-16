@@ -83,13 +83,13 @@
     </div>
     <div class="source-note" id="sourceNote"></div>
     <!--
-      Staff-only entrance, deliberately not shown to customers.
-      Reach the admin panel by going to admin.html directly, or by pressing
-      the restaurant name in the footer five times.
+      No admin link is rendered here.
+
+      The public build contains no admin panel at all, so there is nothing to
+      link to. Staff use the private admin environment instead. Adding a link
+      back would be harmless on its own, but it would advertise an entry point
+      and invite probing, so we deliberately omit it.
     -->
-    <div class="source-note admin-link" id="adminLink" hidden>
-      <a href="admin.html" data-i18n="adminPanel">Admin Panel</a>
-    </div>
   </footer>
 </div>
 

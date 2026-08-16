@@ -1,0 +1,72 @@
+# Publish ONLY the customer menu to GitHub Pages.
+#
+# The repository contains both the public menu and the private admin panel.
+# Publishing the branch root would serve everything — including admin.html,
+# the sign-in code and the test suite. This workflow instead assembles an
+# allow-listed directory and publishes only that, so anything not explicitly
+# listed below cannot be reached on the public site.
+name: Deploy public menu to Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never run two deploys at once; don't cancel a deploy already in flight.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # One script both builds and verifies, so what CI publishes is exactly
+      # what the local `npm run verify:public` check validates. The allow-list
+      # lives in that script — there is no second copy here to drift out of sync.
+      - name: Build and verify the public site
+        run: node scripts/verify-public-build.cjs --out public
+
+      - name: Add serving hints
+        run: |
+          set -euo pipefail
+          # The menu is meant to be found; nothing here is secret.
+          printf 'User-agent: *\nAllow: /\n' > public/robots.txt
+
+      - name: Confirm no secret ever reached the published directory
+        run: |
+          set -euo pipefail
+          # Belt-and-braces: the verifier checks its own assembled copy, this
+          # checks the directory actually being uploaded.
+          if grep -rIlE 'github_pat_|ghp_[A-Za-z0-9]{20,}|BEGIN [A-Z ]*PRIVATE KEY|NDD_CREDENTIALS|NDDAuth|NDDGitHub' public/; then
+            echo "::error::sensitive content found in the upload directory"
+            exit 1
+          fi
+          echo "Publishing these files:"
+          find public -type f | sort
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

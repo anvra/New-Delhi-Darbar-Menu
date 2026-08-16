@@ -790,14 +790,13 @@
     if (envWarn) {
       if (location.protocol === 'file:') {
         envWarn.innerHTML = '<div class="result-box err">'
-          + '<strong>Open this page through a web address, not from a folder</strong>'
+          + '<strong>Start the local server instead of opening the file directly</strong>'
           + '<div>The address bar starts with <code>file://</code>. Browsers block saved logins '
-          + 'and some network requests on local files, so publishing may not work.</div>'
-          + '<div style="margin-top:6px">Use the online admin panel instead: '
-          + '<a href="https://anvra.github.io/New-Delhi-Darbar-Menu/admin.html" target="_blank" rel="noopener">'
-          + 'anvra.github.io/New-Delhi-Darbar-Menu/admin.html ↗</a>'
-          + '<br>Or, if you are testing locally, run <code>npm start</code> and open '
-          + '<code>http://localhost:8080/admin.html</code>.</div></div>';
+          + 'and some network requests on local files, so publishing cannot work.</div>'
+          + '<div style="margin-top:6px">In a terminal, run <code>npm start</code> in the project '
+          + 'folder, then open <code>http://localhost:8080/admin.html</code>.</div>'
+          + '<div style="margin-top:6px">The admin panel is intentionally not published to the '
+          + 'public website, so there is no online version to use.</div></div>';
       } else if (GitHub.isSessionOnly && GitHub.isSessionOnly()) {
         envWarn.innerHTML = '<div class="result-box err">'
           + '<strong>This browser cannot remember your token</strong>'

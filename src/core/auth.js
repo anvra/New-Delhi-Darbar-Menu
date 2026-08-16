@@ -21,10 +21,19 @@
   const STORAGE_SESSION = 'ndd-admin-session';
   const SALT = 'ndd-admin-v1';
 
-  // sha256("ndd-admin-v1:" + username + ":" + password)
-  const CREDENTIALS = [
-    { username: '7567587816', hash: '61c7cd5e916cf777dbd833ef1d968ad0c60c4b470f5579692fff9264c1abfdf8' }
-  ];
+  /*
+    Credentials live in admin-credentials.js, which is git-ignored and never
+    published. It defines window.NDD_CREDENTIALS as:
+      [{ username: '…', hash: '<sha256 of "ndd-admin-v1:USER:PASS">' }]
+
+    If that file is absent — which is the case for anything built for the public
+    site — there are no credentials at all and sign-in always fails. That is the
+    intended fail-closed behaviour: the public build ships no way in.
+  */
+  let CREDENTIALS = Array.isArray(root.NDD_CREDENTIALS) ? root.NDD_CREDENTIALS : [];
+
+  /* Test-only seam so the suite never needs the production password. */
+  function _setCredentialsForTesting(list) { CREDENTIALS = list || []; }
 
   // How long a sign-in lasts before it must be repeated.
   const SESSION_HOURS = 12;
@@ -98,6 +107,14 @@
       };
     }
 
+    if (!CREDENTIALS.length) {
+      return {
+        ok: false,
+        error: 'This copy of the admin panel has no sign-in configured, so it cannot be used to edit the menu. '
+             + 'Use the private admin environment instead.'
+      };
+    }
+
     const attempt = await sha256Hex(SALT + ':' + user + ':' + pass);
     const match = CREDENTIALS.find(c => c.username === user && safeEqual(c.hash, attempt));
     if (!match) {
@@ -108,9 +125,12 @@
     return { ok: true, username: user };
   }
 
+  function isConfigured() { return CREDENTIALS.length > 0; }
+
   root.NDDAuth = {
     STORAGE_SESSION, SESSION_HOURS,
-    signIn, signOut, isSignedIn, currentUser, sha256Hex
+    signIn, signOut, isSignedIn, currentUser, sha256Hex, isConfigured,
+    _setCredentialsForTesting
   };
 
 })(typeof window !== 'undefined' ? window : globalThis);

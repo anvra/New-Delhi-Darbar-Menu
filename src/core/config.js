@@ -2,10 +2,10 @@
   New Delhi Darbar — brand info & notices.
 
   Menu categories/items live in assets/data/menu.csv.
-  Edit everything through the Admin Panel (admin.html), then use its Publish
-  tab to re-export this file. English is the source of truth; the `hi`/`gu`
-  fields below are OPTIONAL manual overrides — leave them empty to let the
-  shared glossary (src/core/glossary.js) derive the translation automatically.
+  Edit everything through the private Admin Panel, then use its Publish tab to
+  re-export this file. English is the source of truth; the `hi`/`gu` fields
+  below are OPTIONAL manual overrides — leave them empty to let the shared
+  glossary (src/core/glossary.js) derive the translation automatically.
 */
 window.NDD_CONFIG = {
   brand: {

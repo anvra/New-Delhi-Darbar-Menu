@@ -3,8 +3,11 @@
 Trilingual (English / हिन्दी / ગુજરાતી) digital menu with a built-in admin panel.
 Static site, no backend, hosted on GitHub Pages.
 
-**Live site:** <https://anvra.github.io/New-Delhi-Darbar-Menu/>  
-**Admin panel:** <https://anvra.github.io/New-Delhi-Darbar-Menu/admin.html>
+**Live site:** <https://anvra.github.io/New-Delhi-Darbar-Menu/>
+
+The live site serves the **customer menu only**. The admin panel is deliberately
+not published — it is run locally from a checkout of this repository. See
+[SECURITY.md](SECURITY.md).
 
 ---
 
@@ -41,8 +44,9 @@ admin.html                  Admin panel
 src/core/                   Shared logic (used by both pages)
   glossary.js                 English -> Hindi/Gujarati translation engine
   store.js                    Load / save / publish data; CSV <-> objects
-  github.js                   Commit changes to GitHub from the browser
-  auth.js                     Admin sign-in
+  github.js                   Commit changes to GitHub from the browser  (not published)
+  auth.js                     Admin sign-in                             (not published)
+  admin-credentials.js        Your sign-in hash — git-ignored           (not published)
   i18n.js                     Static UI labels
   config.js                   Brand details + notices          (editable data)
   menu-fallback.js            Embedded copy of menu.csv        (generated)
@@ -56,37 +60,46 @@ assets/
   img/                        Logos, favicons, QR code
 
 scripts/
-  test-e2e.js                 End-to-end test suite
+  test-e2e.cjs                End-to-end test suite
+  verify-public-build.cjs     Builds + audits the public site
   generate_qr.py              Regenerate the table QR code
+
+.github/workflows/
+  deploy-pages.yml            Publishes ONLY the customer menu
 ```
 
 `config.js` and `menu.csv` hold the content. Everything else is code.
 
 ---
 
-## Signing in
+## Running the admin panel
 
-The admin panel is behind a sign-in, so the public menu can stay linked to it
-without customers being able to edit anything. The Admin Panel link is hidden
-on the customer menu — reach the panel by going to `/admin.html` directly, or by
-tapping the small footer note **five times**.
-
-Credentials are configured in [`src/core/auth.js`](src/core/auth.js). The
-password is stored as a SHA-256 hash, so it does not appear in the source. To
-change it, generate a new hash:
+The admin panel is **not on the public site**. Run it locally:
 
 ```bash
+npm start                       # http://localhost:8080/admin.html
+```
+
+### Setting up credentials (first time)
+
+Sign-in details live in `src/core/admin-credentials.js`, which is **git-ignored
+and never published**. Create it from the template:
+
+```bash
+cp src/core/admin-credentials.sample.js src/core/admin-credentials.js
+
+# Generate a hash for your password
 node -e "console.log(require('crypto').createHash('sha256').update('ndd-admin-v1:USERNAME:PASSWORD').digest('hex'))"
 ```
 
-and replace the `hash` value in `CREDENTIALS`.
+Paste the username and hash into the file. Without this file the admin panel
+refuses every sign-in — which is exactly what a published copy would do.
 
-> **What this does and does not protect.** This is a static site with no server,
-> so the check runs in the browser. It stops a customer who finds the panel from
-> editing the menu, which is the real risk here — but it is not proof against a
-> determined technical user, who can read the page source. The live website is
-> protected by the GitHub token, which is never stored in this repository:
-> without it, nobody can publish anything public.
+> **What this protects.** The client-side check stops casual access; it is not
+> real authorization, because a static site has no server. The control that
+> matters is the GitHub token: it lives only in one browser, is never committed,
+> and without it nobody can change the live site. Full analysis in
+> [SECURITY.md](SECURITY.md).
 
 ---
 
@@ -111,10 +124,9 @@ Git commands are needed. Connect once:
 
 > **Don't open `admin.html` by double-clicking it.** A page opened from a folder
 > has a `file://` address, where browsers block saved logins and some network
-> requests — the Connect button cannot work. Use the
-> [online admin panel](https://anvra.github.io/New-Delhi-Darbar-Menu/admin.html),
-> or run `npm start` and open <http://localhost:8080/admin.html>. The panel
-> detects this and shows a warning with both options.
+> requests — the Connect button cannot work. Run `npm start` and open
+> <http://localhost:8080/admin.html> instead. The panel detects `file://` and
+> warns you.
 
 The token is stored only in that browser's `localStorage` and is sent only to
 `api.github.com`. It is never committed. Anyone with access to that browser
@@ -141,14 +153,17 @@ The Publish tab also offers:
 ## Development
 
 ```bash
-npm install     # test tooling only; the site itself has no build step
-npm start       # serve at http://localhost:8080
-npm test        # run the end-to-end suite
+npm install            # test tooling only; the site itself has no build step
+npm start              # serve at http://localhost:8080
+npm test               # end-to-end suite + public-build audit
+npm run verify:public  # audit what would be published
 ```
 
 `npm test` boots both real pages in a headless browser against the real data and
 checks rendering, navigation, language switching, theming, admin editing,
-persistence, CSV round-tripping and recovery from corrupt storage.
+persistence, CSV round-tripping and recovery from corrupt storage. It then
+audits the public build to confirm no admin code, credential or secret can
+reach the published site.
 
 Serve the site over HTTP rather than opening the files directly — browsers block
 `fetch` on `file://` URLs. The pages do fall back to the embedded menu copy in
