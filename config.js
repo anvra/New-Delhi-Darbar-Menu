@@ -1,10 +1,10 @@
 /*
-  New Delhi Darbar — shared menu data.
-  This file is the single source of truth for index.html and admin.html.
-  Edit it via admin.html (Admin Panel) — changes there update this object
-  and both pages reflect it automatically.
+  New Delhi Darbar — brand info & notices.
+  Menu categories/items live in menu.csv (open & edit in Excel).
+  Edit this file's contents via admin.html (Admin Panel) — changes there
+  update both this data and menu.csv, and both pages reflect it automatically.
 */
-window.NDD_DATA = {
+window.NDD_CONFIG = {
   brand: {
     name: "New Delhi Darbar",
     tagline: "Restaurant",
@@ -25,69 +25,6 @@ window.NDD_DATA = {
       gu: "કિંમતો અને મેનૂની મૂળ માહિતી આપેલા મેનૂ મુજબ જ રાખવામાં આવી છે. સ્રોતમાં ટેક્સ અથવા સર્વિસ ચાર્જની માહિતી દર્શાવેલી નથી."
     }
   },
-
-  // Order here defines both the nav toolbar order and the menu section order.
-  categories: [
-    {
-      id: "chicken",
-      name: { en: "Chicken Item", hi: "चिकन आइटम", gu: "ચિકન આઇટમ" },
-      items: [
-        { en: "Chicken Masala", hi: "चिकन मसाला", gu: "ચિકન મસાલા", price: "80 Rs / plate" },
-        { en: "Chicken Kadai", hi: "चिकन कड़ाई", gu: "ચિકન કડાઈ", price: "80 Rs / plate" },
-        { en: "Chicken Tikka(Fry)", hi: "चिकन टिक्का (फ्राई)", gu: "ચિકન ટિક્કા (ફ્રાય)", price: "80 Rs / plate" },
-        { en: "Chicken Tikka(Gravy)", hi: "चिकन टिक्का (ग्रेवी)", gu: "ચિકન ટિક્કા (ગ્રેવી)", price: "90 Rs / plate" },
-        { en: "Dry Chicken", hi: "सूखी चिकन", gu: "સૂકી ચિકન", price: "100 Rs / plate" },
-        { en: "Hyderabadi Chicken", hi: "हैदराबादी चिकन", gu: "હૈદરાબાદી ચિકન", price: "100 Rs / plate" },
-        { en: "Chicken Biryani", hi: "चिकन बिरयानी", gu: "ચિકન બિરયાની", price: "90 Rs / plate" }
-      ]
-    },
-    {
-      id: "mutton",
-      name: { en: "Mutton Item", hi: "मटन आइटम", gu: "મટન આઇટમ" },
-      items: [
-        { en: "Mutton Masala", hi: "मटन मसाला", gu: "મટન મસાલા", price: "130 Rs / plate" },
-        { en: "Mutton Kadai", hi: "मटन कड़ाई", gu: "મટન કડાઈ", price: "130 Rs / plate" },
-        { en: "Kheema Masala", hi: "कीमा मसाला", gu: "ખીમા મસાલા", price: "100 Rs / plate" },
-        { en: "Kebab (Gravy)", hi: "कबाब (ग्रेवी)", gu: "કબાબ (ગ્રેવી)", price: "130 Rs / plate" },
-        { en: "Kebab (Fry)", hi: "कबाब (फ्राई)", gu: "કબાબ (ફ્રાય)", price: "100 Rs / plate" }
-      ]
-    },
-    {
-      id: "fish",
-      name: { en: "Fish Item", hi: "फिश आइटम", gu: "ફિશ આઈટમ" },
-      items: [
-        { en: "Paplet Fry", hi: "पापलेट फ्राई", gu: "પેપલેટ ફ્રાય", price: "100 Rs / plate" },
-        { en: "Jinga(Gravy)", hi: "झींगा (ग्रेवी)", gu: "જીંગા (ગ્રેવી)", price: "100 Rs / plate" },
-        { en: "Fish Fry", hi: "मछली फ्राई", gu: "મચ્છી ફ્રાય", price: "100 Rs / plate" }
-      ]
-    },
-    {
-      id: "rice",
-      name: { en: "Rice", hi: "चावल", gu: "રાઇસ" },
-      items: [
-        { en: "Biryani Rice", hi: "बिरयानी चावल", gu: "બિરયાની રાઇસ", price: "30 Rs / plate" },
-        { en: "Plane Rice", hi: "सादा चावल", gu: "સાદા રાઇસ", price: "30 Rs / plate" }
-      ]
-    },
-    {
-      id: "roti",
-      name: { en: "Roti", hi: "रोटी", gu: "રોટી" },
-      items: [
-        { en: "Plain Roti", hi: "सादी रोटी", gu: "ઘઉં ની રોટલી", price: "5 Rs / pc" },
-        { en: "Chokha na Rotla", hi: "चावल के रोटला", gu: "ચોખા ના રોટલા", price: "7 Rs / pc" },
-        { en: "Chokha na Pudaa", hi: "चावल के पुड़ा", gu: "ચોખા ના પુડા", price: "6 Rs / pc" }
-      ]
-    },
-    {
-      id: "beverages",
-      name: { en: "Cold Beverages", hi: "कोल्ड बेवरेजेज", gu: "કોલ્ડ બેવરેજિસ" },
-      items: [
-        { en: "Mineral Water", hi: "मिनरल वाटर", gu: "મિનરલ વોટર", price: "10/20 Rs" },
-        { en: "Jeera", hi: "जीरा", gu: "જીરા", price: "10 Rs" },
-        { en: "Soft Drinks", hi: "सॉफ्ट ड्रिंक्स", gu: "સોફ્ટ ડ્રિંક્સ", price: "20/40 Rs" }
-      ]
-    }
-  ],
 
   notices: [
     {

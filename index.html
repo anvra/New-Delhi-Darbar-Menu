@@ -7,7 +7,7 @@
 <meta name="description" content="New Delhi Darbar Restaurant digital menu">
 <title>New Delhi Darbar — Menu</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-<script src="menu-data.js"></script>
+<script src="config.js"></script>
 <style>
    :root{
     --bg:#f5f2ed;
@@ -460,16 +460,68 @@
 </div>
 
 <script>
-(() => {
-  const STORAGE_DATA = 'ndd-data-override';
-  function loadData(){
+(async () => {
+  const STORAGE_CONFIG = 'ndd-config-override';
+  const STORAGE_CSV = 'ndd-csv-override';
+
+  function loadConfig(){
     try {
-      const raw = localStorage.getItem(STORAGE_DATA);
+      const raw = localStorage.getItem(STORAGE_CONFIG);
       if (raw) return JSON.parse(raw);
     } catch (e) { /* fall through to default */ }
-    return window.NDD_DATA;
+    return window.NDD_CONFIG;
   }
-  const DATA = loadData();
+
+  function rowsToCategories(rows){
+    const byId = new Map();
+    rows.forEach(r => {
+      const id = (r.category_id || '').trim();
+      if (!id) return;
+      if (!byId.has(id)) {
+        byId.set(id, {
+          id,
+          order: Number(r.category_order) || 0,
+          name: { en: r.category_en || '', hi: r.category_hi || '', gu: r.category_gu || '' },
+          items: []
+        });
+      }
+      const en = (r.item_en || '').trim();
+      if (!en) return;
+      byId.get(id).items.push({
+        order: Number(r.item_order) || 0,
+        en, hi: r.item_hi || '', gu: r.item_gu || '', price: r.price || ''
+      });
+    });
+    const cats = [...byId.values()];
+    cats.forEach(c => c.items.sort((a, b) => a.order - b.order));
+    cats.sort((a, b) => a.order - b.order);
+    return cats;
+  }
+
+  function parseCsv(text){
+    const result = Papa.parse(text, { header: true, skipEmptyLines: true });
+    return rowsToCategories(result.data);
+  }
+
+  function loadCategories(){
+    return new Promise(resolve => {
+      try {
+        const raw = localStorage.getItem(STORAGE_CSV);
+        if (raw) { resolve(parseCsv(raw)); return; }
+      } catch (e) { /* fall through to fetch */ }
+      Papa.parse('menu.csv', {
+        download: true,
+        header: true,
+        skipEmptyLines: true,
+        complete: res => resolve(rowsToCategories(res.data)),
+        error: () => resolve([])
+      });
+    });
+  }
+
+  const config = loadConfig();
+  const categories = await loadCategories();
+  const DATA = { brand: config.brand, notices: config.notices, categories };
 
   function escAttr(s){
     return String(s == null ? '' : s).replace(/"/g,'&quot;');
@@ -770,7 +822,7 @@
   setActiveCategory(categoryCards[0]?.id || (DATA.categories[0] && DATA.categories[0].id));
 
   window.addEventListener('storage', e => {
-    if (e.key === STORAGE_DATA) location.reload();
+    if (e.key === STORAGE_CONFIG || e.key === STORAGE_CSV) location.reload();
   });
 
 })();
