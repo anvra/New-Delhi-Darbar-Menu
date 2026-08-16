@@ -103,7 +103,7 @@
     const nav = document.getElementById('catNav');
     if (!nav) return;
     nav.innerHTML = DATA.categories
-      .map(c => `<a class="cat-link" href="#${escapeHtml(c.id)}" data-cat="${escapeHtml(c.id)}">${escapeHtml(text(c.name))}</a>`)
+      .map(c => `<a class="cat-link" href="#${escapeHtml(c.id)}" data-cat="${escapeHtml(c.id)}">${Store.sanitizeRichText(text(c.name))}</a>`)
       .join('');
   }
 
@@ -118,14 +118,14 @@
     const sections = DATA.categories.map(cat => {
       const items = cat.items.map(it => `
         <div class="item">
-          <div><div class="item-name">${escapeHtml(text(it))}</div></div>
-          ${it.price ? `<div class="price">${escapeHtml(it.price)}</div>` : ''}
+          <div><div class="item-name">${Store.sanitizeRichText(text(it))}</div></div>
+          ${it.price ? `<div class="price">${Store.sanitizeRichText(it.price)}</div>` : ''}
         </div>`).join('');
 
       return `
         <section class="card" id="${escapeHtml(cat.id)}">
           <div class="card-head">
-            <h2>${escapeHtml(text(cat.name))}</h2>
+            <h2>${Store.sanitizeRichText(text(cat.name))}</h2>
             <span class="count">${cat.items.length}</span>
           </div>
           <div class="items">${items}</div>

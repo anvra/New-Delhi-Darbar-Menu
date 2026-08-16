@@ -157,7 +157,7 @@
               ? (field.en
                   ? 'Will show the English words to customers'
                   : 'Type the English name first')
-              : esc(resolved)
+              : Store.sanitizeRichText(resolved)
           }</span>
           <span class="tstatus ${state}">${STATUS_LABEL[state]}</span>`;
 

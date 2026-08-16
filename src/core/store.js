@@ -42,7 +42,7 @@
     using the browser's own HTML parser (not regex, which is not reliable for
     HTML) so the result can only ever be inert markup.
   */
-  const SANITIZE_ALLOWED_TAGS = new Set(['STRONG', 'B', 'EM', 'I', 'BR', 'SPAN']);
+  const SANITIZE_ALLOWED_TAGS = new Set(['STRONG', 'B', 'EM', 'I', 'BR', 'SPAN', 'U', 'SMALL', 'SUP', 'SUB', 'STRIKE', 'S', 'MARK', 'DEL', 'INS', 'CODE', 'KBD', 'Q', 'CITE', 'DFN', 'ABBR', 'TIME', 'VAR', 'SAMP', 'WBR']);
   const SANITIZE_ALLOWED_ATTRS = new Set([]); // no attributes allowed — no href, no on*, no style
 
   function sanitizeRichText(html) {
