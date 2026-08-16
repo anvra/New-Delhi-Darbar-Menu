@@ -17,7 +17,7 @@ window.NDD_CONFIG = {
     "address": "Opp. Masjid, Nana Taiwad, Valsad. 396001",
     "mapUrl": "https://maps.app.goo.gl/PcJ4x3PgARtX2wjEA",
     "stockNote": {
-      "en": "Please note: items are served subject to availability.",
+      "en": "Please note: Items are served subject to availability. Thank you for your understanding.",
       "hi": "कृपया ध्यान दें: उपलब्धता के अनुसार ही व्यंजन परोसे जाएंगे।",
       "gu": "કૃપા કરીને નોંધો: ઉપલબ્ધતા મુજબ જ વાનગીઓ પીરસવામાં આવશે."
     },
