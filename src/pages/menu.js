@@ -164,6 +164,15 @@
     if (sourceEl) sourceEl.textContent = text(DATA.brand.sourceNote);
     const langHeader = document.getElementById('langMenuHeader');
     if (langHeader) langHeader.textContent = i18n.t(currentLang, 'languageLabel');
+    const lastUpdEl = document.getElementById('lastUpdatedNote');
+    if (lastUpdEl && window.NDD_CONFIG.lastUpdated) {
+      const d = new Date(window.NDD_CONFIG.lastUpdated);
+      const opts = { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' };
+      let label = 'Last updated: ';
+      if (currentLang === 'hi') label = 'अंतिम अपडेट: ';
+      if (currentLang === 'gu') label = 'છેલ્લું અપડેટ: ';
+      lastUpdEl.textContent = label + d.toLocaleDateString(currentLang === 'en' ? 'en-IN' : currentLang, opts);
+    }
   }
 
   function applyLanguage(lang) {
