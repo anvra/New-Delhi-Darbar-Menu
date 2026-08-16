@@ -337,4 +337,28 @@
   window.addEventListener('storage', e => {
     if (e.key === Store.STORAGE_CONFIG || e.key === Store.STORAGE_CSV) location.reload();
   });
+
+  /*
+    Staff shortcut to the admin panel, hidden from customers.
+    Press the footer note five times quickly to reveal the link — this keeps a
+    phone-friendly route in without advertising it on the public menu.
+  */
+  (() => {
+    const trigger = document.getElementById('sourceNote');
+    const adminLink = document.getElementById('adminLink');
+    if (!trigger || !adminLink) return;
+
+    let taps = 0;
+    let timer = 0;
+    trigger.addEventListener('click', () => {
+      taps++;
+      clearTimeout(timer);
+      timer = setTimeout(() => { taps = 0; }, 1500);
+      if (taps >= 5) {
+        taps = 0;
+        adminLink.hidden = false;
+        adminLink.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+    });
+  })();
 })();

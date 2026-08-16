@@ -64,6 +64,12 @@ async function loadPage(file, storageSeed) {
   window.matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {} });
   window.scrollTo = () => {};
   window.confirm = () => true;
+  // JSDOM ships no WebCrypto; the sign-in module needs SubtleCrypto for hashing.
+  if (!window.crypto || !window.crypto.subtle) {
+    Object.defineProperty(window, 'crypto', {
+      value: require('crypto').webcrypto, configurable: true
+    });
+  }
   window.IntersectionObserver = class {
     observe() {} disconnect() {} unobserve() {}
   };
@@ -102,6 +108,23 @@ async function loadPage(file, storageSeed) {
   // Let async boot() settle.
   await new Promise(r => setTimeout(r, 60));
   return { dom, window, storage, consoleErrors };
+}
+
+/* The admin panel is behind a sign-in; most tests want it already unlocked. */
+const ADMIN_USER = '7567587816';
+const ADMIN_PASS = 'Thiskeyndd@396';
+
+async function loadAdmin(storageSeed) {
+  const page = await loadPage('admin.html', storageSeed);
+  const d = page.window.document;
+  if (d.body.classList.contains('signed-out')) {
+    d.getElementById('loginUser').value = ADMIN_USER;
+    d.getElementById('loginPass').value = ADMIN_PASS;
+    d.getElementById('loginForm').dispatchEvent(
+      new page.window.Event('submit', { bubbles: true, cancelable: true }));
+    await new Promise(r => setTimeout(r, 120));
+  }
+  return page;
 }
 
 (async () => {
@@ -272,7 +295,7 @@ async function loadPage(file, storageSeed) {
   }
 
   /* ---------------- 4. Admin panel ---------------- */
-  const admin = await loadPage('admin.html');
+  const admin = await loadAdmin();
   {
     const d = admin.window.document;
     check('admin loads categories', d.querySelectorAll('.cat-card').length === 6,
@@ -420,7 +443,7 @@ async function loadPage(file, storageSeed) {
     check('recovers from corrupt config JSON',
       recovered.window.document.getElementById('brandH1').textContent === 'New Delhi Darbar');
 
-    const adminRecovered = await loadPage('admin.html', {
+    const adminRecovered = await loadAdmin({
       'ndd-csv-override': 'category_order,category_id,category_en\n'
     });
     check('admin recovers from an empty override',
@@ -429,7 +452,7 @@ async function loadPage(file, storageSeed) {
 
   /* ---------------- 8. Translation UI is understandable ---------------- */
   {
-    const admin2 = await loadPage('admin.html');
+    const admin2 = await loadAdmin();
     const d = admin2.window.document;
 
     // Plain-language labels, no jargon.
@@ -482,7 +505,7 @@ async function loadPage(file, storageSeed) {
 
   /* ---------------- 9. GitHub publishing ---------------- */
   {
-    const admin3 = await loadPage('admin.html');
+    const admin3 = await loadAdmin();
     const w = admin3.window;
     const d = w.document;
     const GH = w.NDDGitHub;
@@ -556,7 +579,8 @@ async function loadPage(file, storageSeed) {
 
     w.fetch = async () => ({ ok: false, status: 403, json: async () => ({}) });
     try { await GH.verify(); } catch (e) { msg = e.message; }
-    check('403 mentions the needed permission', /permission/i.test(msg), msg);
+    check('403 explains the likely causes',
+      /Contents/.test(msg) && /Repository access/i.test(msg), msg);
 
     GH.setToken('');
     check('clearing the token disconnects', !GH.hasToken());
@@ -574,7 +598,7 @@ async function loadPage(file, storageSeed) {
     // Regression: on file:// and in private mode, localStorage.setItem THROWS.
     // That aborted connectGitHub() before any message rendered, so the button
     // appeared to do nothing at all.
-    const admin5 = await loadPage('admin.html');
+    const admin5 = await loadAdmin();
     const w = admin5.window;
     const d = w.document;
 
@@ -639,7 +663,11 @@ async function loadPage(file, storageSeed) {
     });
     w.matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {} });
     w.scrollTo = () => {}; w.confirm = () => true;
+    if (!w.crypto || !w.crypto.subtle) {
+      Object.defineProperty(w, 'crypto', { value: require('crypto').webcrypto, configurable: true });
+    }
     w.IntersectionObserver = class { observe() {} disconnect() {} unobserve() {} };
+    w.Element.prototype.scrollIntoView = () => {};
     w.URL.createObjectURL = () => 'blob:x'; w.URL.revokeObjectURL = () => {};
     const papaSrc = fs.readFileSync(require.resolve('papaparse'), 'utf8');
     w.eval(papaSrc.replace(/module\.exports/g, 'window.__papa_export'));
@@ -664,6 +692,11 @@ async function loadPage(file, storageSeed) {
     check('warning mentions the local server option',
       /localhost:8080/.test(warning), warning.slice(0, 200));
     // The menu itself must still load from the embedded fallback on file://.
+    w.document.getElementById('loginUser').value = ADMIN_USER;
+    w.document.getElementById('loginPass').value = ADMIN_PASS;
+    w.document.getElementById('loginForm').dispatchEvent(
+      new w.Event('submit', { bubbles: true, cancelable: true }));
+    await new Promise(r => setTimeout(r, 140));
     check('menu still loads on file:// via the fallback',
       w.document.querySelectorAll('.cat-card').length === 6,
       `${w.document.querySelectorAll('.cat-card').length} categories`);
@@ -671,7 +704,7 @@ async function loadPage(file, storageSeed) {
 
   /* ---------------- 10. Backup & restore ---------------- */
   {
-    const admin4 = await loadPage('admin.html');
+    const admin4 = await loadAdmin();
     const w = admin4.window;
     const d = w.document;
 
@@ -702,6 +735,150 @@ async function loadPage(file, storageSeed) {
     eq('backup restores the same item count',
       roundTrip.reduce((n, c) => n + c.items.length, 0), 23);
     eq('backup preserves the first item name', roundTrip[0].items[0].en, 'Chicken Masala');
+  }
+
+  /* ---------------- 10b. Admin sign-in ---------------- */
+  {
+    const gated = await loadPage('admin.html');
+    const w = gated.window;
+    const d = w.document;
+    const Auth = w.NDDAuth;
+
+    // Locked by default.
+    check('admin starts signed out', d.body.classList.contains('signed-out'));
+    check('login screen is present', !!d.getElementById('loginScreen'));
+    check('menu is not loaded before sign-in',
+      d.querySelectorAll('.cat-card').length === 0,
+      `${d.querySelectorAll('.cat-card').length} categories leaked`);
+
+    // The password must not be recoverable from the source.
+    const authSrc = fs.readFileSync(path.join(ROOT, 'src/core/auth.js'), 'utf8');
+    check('password is not stored in plain text', !authSrc.includes('Thiskeyndd'));
+    check('credentials are stored as a hash', /[a-f0-9]{64}/.test(authSrc));
+
+    // Wrong credentials are rejected.
+    let res = await Auth.signIn('7567587816', 'wrong-password', false);
+    check('wrong password is rejected', res.ok === false);
+    check('rejection message is helpful', /username or password/i.test(res.error));
+    res = await Auth.signIn('wrong-user', 'Thiskeyndd@396', false);
+    check('wrong username is rejected', res.ok === false);
+    res = await Auth.signIn('', '', false);
+    check('empty credentials are rejected', res.ok === false);
+    check('still signed out after failures', !Auth.isSignedIn());
+
+    // Correct credentials work.
+    res = await Auth.signIn('7567587816', 'Thiskeyndd@396', false);
+    check('correct credentials are accepted', res.ok === true, res.error);
+    check('session is active', Auth.isSignedIn());
+    eq('current user is reported', Auth.currentUser(), '7567587816');
+
+    // Signing out clears it.
+    Auth.signOut();
+    check('sign out ends the session', !Auth.isSignedIn());
+
+    // "Remember me" persists; without it the session is tab-only.
+    await Auth.signIn('7567587816', 'Thiskeyndd@396', true);
+    check('remember-me persists to localStorage',
+      !!gated.storage.getItem('ndd-admin-session'));
+    Auth.signOut();
+    check('sign out clears the remembered session',
+      !gated.storage.getItem('ndd-admin-session'));
+
+    // An expired session must not grant access.
+    gated.storage.setItem('ndd-admin-session',
+      JSON.stringify({ username: '7567587816', expires: Date.now() - 1000 }));
+    check('expired session is refused', !Auth.isSignedIn());
+
+    // Submitting the real form must unlock the panel and load the menu.
+    const gated2 = await loadPage('admin.html');
+    const d2 = gated2.window.document;
+    d2.getElementById('loginUser').value = '7567587816';
+    d2.getElementById('loginPass').value = 'Thiskeyndd@396';
+    d2.getElementById('loginForm').dispatchEvent(
+      new gated2.window.Event('submit', { bubbles: true, cancelable: true }));
+    await new Promise(r => setTimeout(r, 120));
+
+    check('signing in reveals the panel', d2.body.classList.contains('signed-in'));
+    check('signing in loads the menu', d2.querySelectorAll('.cat-card').length === 6,
+      `${d2.querySelectorAll('.cat-card').length} categories`);
+    eq('header shows who is signed in', d2.getElementById('whoami').textContent, '7567587816');
+    check('password field is cleared after sign-in', d2.getElementById('loginPass').value === '');
+    check('sign out button exists', !!d2.getElementById('signOutBtn'));
+
+    // A bad submit shows an error and stays locked.
+    const gated3 = await loadPage('admin.html');
+    const d3 = gated3.window.document;
+    d3.getElementById('loginUser').value = '7567587816';
+    d3.getElementById('loginPass').value = 'nope';
+    d3.getElementById('loginForm').dispatchEvent(
+      new gated3.window.Event('submit', { bubbles: true, cancelable: true }));
+    await new Promise(r => setTimeout(r, 120));
+    check('bad sign-in shows an error', d3.getElementById('loginError').textContent.length > 0);
+    check('bad sign-in stays locked', d3.body.classList.contains('signed-out'));
+    check('sign-in button is re-enabled', !d3.getElementById('loginBtn').disabled);
+  }
+
+  /* ---------------- 10c. Admin link hidden from customers ---------------- */
+  {
+    const pub = await loadPage('index.html');
+    const d = pub.window.document;
+    const link = d.getElementById('adminLink');
+
+    check('admin link exists in the markup', !!link);
+    check('admin link is hidden from customers', link.hidden === true);
+
+    // Five taps on the footer note reveal it for staff.
+    const trigger = d.getElementById('sourceNote');
+    for (let i = 0; i < 5; i++) trigger.click();
+    check('five taps reveal the admin link', link.hidden === false);
+    check('revealed link points at the admin panel',
+      link.querySelector('a').getAttribute('href') === 'admin.html');
+
+    // A couple of stray taps must not reveal it.
+    const pub2 = await loadPage('index.html');
+    const d2 = pub2.window.document;
+    d2.getElementById('sourceNote').click();
+    d2.getElementById('sourceNote').click();
+    check('a couple of taps do not reveal it', d2.getElementById('adminLink').hidden === true);
+  }
+
+  /* ---------------- 10d. GitHub permission diagnosis ---------------- */
+  {
+    const a = await loadAdmin();
+    const w = a.window;
+    const GH = w.NDDGitHub;
+    GH.setToken('github_pat_test');
+
+    // A token that can see the repo but not read Contents must fail at connect
+    // time with a clear reason, rather than a confusing 403 when publishing.
+    w.fetch = async (url) => {
+      const json = o => ({ ok: true, status: 200, json: async () => o });
+      if (/\/user$/.test(url)) return json({ login: 'anvra' });
+      if (/\/contents\//.test(url)) {
+        return { ok: false, status: 403, json: async () => ({ message: 'Resource not accessible by personal access token' }) };
+      }
+      if (/\/repos\/[^/]+\/[^/]+$/.test(url)) return json({ full_name: 'anvra/x', permissions: { push: true } });
+      return json({});
+    };
+    const info = await GH.verify();
+    check('detects a token that cannot read Contents', info.canWrite === false);
+    check('account push right is reported separately', info.accountCanPush === true);
+    check('explains the Contents problem', /Contents|permission/i.test(info.contentsError), info.contentsError);
+
+    // The 403 explanation must cover both common causes.
+    w.fetch = async () => ({ ok: false, status: 403, json: async () => ({ message: 'Resource not accessible by personal access token' }) });
+    let msg = '';
+    try { await GH.readFile('x'); } catch (e) { msg = e.message; }
+    check('403 mentions Contents: Read and write', /Contents/.test(msg), msg);
+    check('403 mentions repository access', /Repository access|access to this specific/i.test(msg), msg);
+    check('403 quotes what GitHub said', /GitHub said/.test(msg), msg);
+
+    // Rate limiting is distinguished from a permission problem.
+    w.fetch = async () => ({ ok: false, status: 403, json: async () => ({ message: 'API rate limit exceeded' }) });
+    try { await GH.readFile('x'); } catch (e) { msg = e.message; }
+    check('rate limiting is reported distinctly', /rate limit|few minutes/i.test(msg), msg);
+
+    GH.setToken('');
   }
 
   /* ---------------- 11. No runtime errors anywhere ---------------- */

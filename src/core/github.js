@@ -119,12 +119,32 @@
   }
 
   function friendlyError(status, detail) {
-    if (status === 401) return 'That token was rejected. It may be wrong or expired — create a new one and save it again.';
-    if (status === 403) return 'GitHub refused the request. The token may lack "Contents: Read and write" permission for this repository.';
-    if (status === 404) return 'Repository not found. Check the owner/repository name, and that the token can access it.';
-    if (status === 409) return 'The repository changed while publishing. Try again.';
-    if (status === 422) return 'GitHub rejected the content' + (detail ? ': ' + detail : '.');
-    return 'GitHub error ' + status + (detail ? ': ' + detail : '');
+    // GitHub's own wording is often the most useful clue, so keep it visible.
+    const because = detail ? ' GitHub said: “' + detail + '”' : '';
+
+    if (status === 401) {
+      return 'That token was rejected — it may be wrong, expired, or revoked. Create a new one and connect again.' + because;
+    }
+    if (status === 403) {
+      if (/rate limit/i.test(detail)) {
+        return 'Too many requests to GitHub for now. Wait a few minutes and try again.';
+      }
+      if (/saml|sso/i.test(detail)) {
+        return 'This token needs to be authorised for the organisation (SAML/SSO) before it can be used.' + because;
+      }
+      return 'GitHub refused the request. Two common causes: '
+        + '(1) the token is missing “Contents: Read and write”, or '
+        + '(2) the token has not been granted access to this specific repository '
+        + '— a fine-grained token must list New-Delhi-Darbar-Menu under “Repository access”, '
+        + 'and if the repo belongs to an organisation an owner must approve the token.' + because;
+    }
+    if (status === 404) {
+      return 'Repository not found. Either the owner/name is wrong, or the token was not given access to it '
+        + '(a fine-grained token can only see repositories you explicitly select).' + because;
+    }
+    if (status === 409) return 'The repository changed while publishing. Please try again.';
+    if (status === 422) return 'GitHub rejected the content.' + because;
+    return 'GitHub error ' + status + '.' + because;
   }
 
   /* UTF-8 safe base64 (btoa alone breaks on Devanagari/Gujarati text). */
@@ -147,15 +167,37 @@
 
   /* ---------------- public operations ---------------- */
 
-  /* Verify the token works and has write access. Returns { login, repo, canWrite }. */
+  /*
+    Verify the token works and can actually write.
+
+    `permissions.push` reflects the ACCOUNT's rights on the repo, not what this
+    particular fine-grained token was granted — a token with no Contents
+    permission still reports push:true. So we additionally read a file through
+    the contents API, which a token lacking Contents access cannot do. That
+    turns a confusing publish-time 403 into a clear failure at connect time.
+  */
   async function verify() {
-    const { owner, repo } = getRepo();
+    const { owner, repo, branch } = getRepo();
     const user = await api('/user');
     const repoInfo = await api(`/repos/${owner}/${repo}`);
+    const accountCanPush = !!(repoInfo.permissions && (repoInfo.permissions.push || repoInfo.permissions.admin));
+
+    let contentsReadable = false;
+    let contentsError = '';
+    try {
+      await api(`/repos/${owner}/${repo}/contents/assets/data/menu.csv?ref=${branch}`);
+      contentsReadable = true;
+    } catch (err) {
+      contentsError = err.message;
+    }
+
     return {
       login: user.login,
       repo: repoInfo.full_name,
-      canWrite: !!(repoInfo.permissions && (repoInfo.permissions.push || repoInfo.permissions.admin))
+      canWrite: accountCanPush && contentsReadable,
+      accountCanPush,
+      contentsReadable,
+      contentsError
     };
   }
 

@@ -82,7 +82,14 @@
       <div class="contact" id="footerContact"></div>
     </div>
     <div class="source-note" id="sourceNote"></div>
-    <div class="source-note admin-link"><a href="admin.html" data-i18n="adminPanel">Admin Panel</a></div>
+    <!--
+      Staff-only entrance, deliberately not shown to customers.
+      Reach the admin panel by going to admin.html directly, or by pressing
+      the restaurant name in the footer five times.
+    -->
+    <div class="source-note admin-link" id="adminLink" hidden>
+      <a href="admin.html" data-i18n="adminPanel">Admin Panel</a>
+    </div>
   </footer>
 </div>
 

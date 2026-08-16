@@ -8,7 +8,37 @@
 <link rel="icon" type="image/png" href="assets/img/favicon-light.png">
 <link rel="stylesheet" href="src/pages/admin.css">
 </head>
-<body>
+<body class="signed-out">
+
+<!-- Sign-in screen. Shown until the admin authenticates. -->
+<div class="login-screen" id="loginScreen">
+  <form class="login-card" id="loginForm" autocomplete="on">
+    <img class="login-logo" src="assets/img/logo-light.png" alt="" width="56" height="56">
+    <h1>New Delhi Darbar</h1>
+    <p class="login-sub">Admin Panel — please sign in</p>
+
+    <label for="loginUser">Username</label>
+    <input type="text" id="loginUser" name="username" inputmode="numeric"
+           autocomplete="username" autocapitalize="off" spellcheck="false" required>
+
+    <label for="loginPass">Password</label>
+    <div class="password-field">
+      <input type="password" id="loginPass" name="password" autocomplete="current-password" required>
+      <button type="button" class="peek-btn" id="peekBtn" aria-label="Show password">Show</button>
+    </div>
+
+    <label class="checkbox-row">
+      <input type="checkbox" id="loginRemember">
+      <span>Keep me signed in on this device</span>
+    </label>
+
+    <button class="btn primary login-submit" id="loginBtn" type="submit">Sign In</button>
+    <div class="login-error" id="loginError" role="alert"></div>
+
+    <a class="login-back" href="index.html">← Back to the menu</a>
+  </form>
+</div>
+
 <header>
   <div>
     <h1>New Delhi Darbar — Admin Panel</h1>
@@ -16,9 +46,11 @@
   </div>
   <div class="toolrow">
     <span class="status" id="status" role="status" aria-live="polite">Saved</span>
+    <span class="who" id="whoami" title="Signed in as"></span>
     <button class="btn" id="viewSiteBtn" type="button">View Site ↗</button>
     <button class="btn danger" id="resetBtn" type="button">Discard Changes</button>
     <button class="btn primary" id="saveBtn" type="button">Save &amp; Publish</button>
+    <button class="btn" id="signOutBtn" type="button">Sign Out</button>
   </div>
 </header>
 
@@ -149,18 +181,50 @@
             <li>
               Open
               <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">
-                this GitHub page</a> (sign in if asked).
+                this GitHub page</a> (sign in if asked). Make sure the heading says
+              <strong>Fine-grained personal access token</strong>.
             </li>
             <li>In <strong>Token name</strong> type: <code>New Delhi Darbar Menu</code></li>
+            <li>Under <strong>Resource owner</strong>, choose <strong>anvra</strong>
+                (the account that owns the menu).</li>
             <li>Under <strong>Expiration</strong>, choose <strong>No expiration</strong> (or 1 year).</li>
-            <li>Under <strong>Repository access</strong>, pick <strong>Only select repositories</strong>
-                and choose <strong>New-Delhi-Darbar-Menu</strong>.</li>
-            <li>Under <strong>Permissions → Repository permissions</strong>, find <strong>Contents</strong>
-                and set it to <strong>Read and write</strong>.</li>
-            <li>Click <strong>Generate token</strong> at the bottom, then <strong>copy</strong> the token
+            <li>Under <strong>Repository access</strong>, pick <strong>Only select repositories</strong>,
+                then click <strong>Select repositories</strong> and tick
+                <strong>New-Delhi-Darbar-Menu</strong>.
+                <span class="step-warn">If you skip this, publishing fails with a “refused” error.</span></li>
+            <li>Open <strong>Permissions → Repository permissions</strong>, scroll to
+                <strong>Contents</strong>, and change its dropdown from “No access” to
+                <strong>Read and write</strong>.
+                <span class="step-warn">This is the step most often missed.</span></li>
+            <li>Click <strong>Generate token</strong> at the bottom, then <strong>copy</strong> it
                 (it starts with <code>github_pat_</code>).</li>
             <li>Paste it in the box below and press <strong>Connect</strong>.</li>
           </ol>
+        </details>
+
+        <details class="setup-guide">
+          <summary>Publishing was refused — how to fix it</summary>
+          <div class="hint" style="margin-top:8px">
+            A “refused” message almost always means one of these. Re-create the token and check each:
+          </div>
+          <ol class="setup-steps">
+            <li><strong>Contents is still “No access”.</strong> The token needs
+                <strong>Contents: Read and write</strong>. Read-only is not enough to publish.</li>
+            <li><strong>The repository was not selected.</strong> Under Repository access the token must
+                explicitly list <strong>New-Delhi-Darbar-Menu</strong>. “Public repositories” only grants
+                read access and cannot publish.</li>
+            <li><strong>Wrong resource owner.</strong> The token must be created under
+                <strong>anvra</strong>, the account that owns the repository.</li>
+            <li><strong>A classic token was used.</strong> Classic tokens need the full
+                <code>repo</code> scope ticked. A fine-grained token is easier and safer.</li>
+            <li><strong>The token expired</strong>, or was revoked. Generate a new one.</li>
+          </ol>
+          <div class="hint">
+            You can check what a token is allowed to do at
+            <a href="https://github.com/settings/tokens" target="_blank" rel="noopener">github.com/settings/tokens</a>.
+            Nothing is ever lost while this is being sorted out — your changes stay saved on this device,
+            and the manual file downloads below always work.
+          </div>
         </details>
 
         <label for="ghToken">Paste your GitHub token here</label>
@@ -234,6 +298,7 @@
 <script src="src/core/i18n.js"></script>
 <script src="src/core/store.js"></script>
 <script src="src/core/github.js"></script>
+<script src="src/core/auth.js"></script>
 <script src="src/pages/admin.js"></script>
 </body>
 </html>

@@ -234,3 +234,41 @@ input[type=password]:focus{outline:none;border-color:var(--accent)}
 .trans-override label{margin-top:0}
 .trans-override .toolrow{margin-top:8px}
 .override-help{font-size:11.5px;color:var(--muted);margin-bottom:6px}
+
+/* ---------- Sign-in ---------- */
+/* Hide the panel until authenticated. Also guards against a flash of the
+   admin UI before JavaScript runs. */
+body.signed-out > header,
+body.signed-out > .shell,
+body.signed-out > .save-fab{display:none!important}
+body.signed-in > .login-screen{display:none!important}
+
+.login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.login-card{width:100%;max-width:370px;background:var(--surface);border:1px solid var(--line);
+  border-radius:16px;padding:30px 26px 24px;box-shadow:0 18px 44px rgba(30,24,18,.10);text-align:center}
+.login-logo{display:block;margin:0 auto 12px;object-fit:contain}
+.login-card h1{font-size:19px;margin:0 0 2px;letter-spacing:-.01em}
+.login-sub{font-size:12.5px;color:var(--muted);margin:0 0 20px}
+.login-card label{text-align:left}
+.login-card input[type=text],.login-card input[type=password]{font-size:15px;padding:11px 12px}
+
+.password-field{position:relative;display:flex;align-items:center}
+.password-field input{flex:1;padding-right:60px!important}
+.peek-btn{position:absolute;right:6px;border:0;background:transparent;color:var(--accent);
+  font-size:11.5px;font-weight:700;cursor:pointer;padding:6px 8px;border-radius:6px}
+.peek-btn:hover{background:var(--accent-soft)}
+
+.checkbox-row{display:flex;align-items:center;gap:8px;margin:14px 0 4px;
+  font-size:12.5px;color:var(--muted);text-transform:none;letter-spacing:0;font-weight:400;cursor:pointer}
+.checkbox-row input{width:auto;margin:0;cursor:pointer}
+
+.login-submit{width:100%;margin-top:14px;padding:12px;font-size:14px}
+.login-error{margin-top:12px;font-size:12.5px;color:var(--danger);min-height:18px;line-height:1.5}
+.login-back{display:inline-block;margin-top:16px;font-size:12px;color:var(--muted)}
+.login-back:hover{color:var(--accent)}
+
+.who{font-size:11.5px;color:var(--muted);padding:5px 10px;border:1px solid var(--line);
+  border-radius:999px;white-space:nowrap}
+.who::before{content:"👤 ";}
+
+.step-warn{display:block;font-size:11.5px;color:var(--warn);font-weight:650;margin-top:2px}

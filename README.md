@@ -42,6 +42,7 @@ src/core/                   Shared logic (used by both pages)
   glossary.js                 English -> Hindi/Gujarati translation engine
   store.js                    Load / save / publish data; CSV <-> objects
   github.js                   Commit changes to GitHub from the browser
+  auth.js                     Admin sign-in
   i18n.js                     Static UI labels
   config.js                   Brand details + notices          (editable data)
   menu-fallback.js            Embedded copy of menu.csv        (generated)
@@ -63,9 +64,35 @@ scripts/
 
 ---
 
+## Signing in
+
+The admin panel is behind a sign-in, so the public menu can stay linked to it
+without customers being able to edit anything. The Admin Panel link is hidden
+on the customer menu — reach the panel by going to `/admin.html` directly, or by
+tapping the small footer note **five times**.
+
+Credentials are configured in [`src/core/auth.js`](src/core/auth.js). The
+password is stored as a SHA-256 hash, so it does not appear in the source. To
+change it, generate a new hash:
+
+```bash
+node -e "console.log(require('crypto').createHash('sha256').update('ndd-admin-v1:USERNAME:PASSWORD').digest('hex'))"
+```
+
+and replace the `hash` value in `CREDENTIALS`.
+
+> **What this does and does not protect.** This is a static site with no server,
+> so the check runs in the browser. It stops a customer who finds the panel from
+> editing the menu, which is the real risk here — but it is not proof against a
+> determined technical user, who can read the page source. The live website is
+> protected by the GitHub token, which is never stored in this repository:
+> without it, nobody can publish anything public.
+
+---
+
 ## Editing the menu
 
-1. Open **admin.html** (locally or on the live site).
+1. Open **admin.html** and sign in.
 2. Edit categories, items, prices, brand details and notices. Type English only.
 3. Click **Save & Publish** — the menu updates immediately in your browser.
 4. To publish for *all* customers, open the **Publish** tab and press

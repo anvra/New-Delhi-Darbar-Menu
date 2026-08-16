@@ -716,7 +716,11 @@
 
       if (!info.canWrite) {
         GitHub.setToken('');
-        msg.textContent = 'That token cannot edit this repository. Re-create it with "Contents: Read and write".';
+        msg.textContent = !info.accountCanPush
+          ? 'This GitHub account does not have permission to edit the menu repository.'
+          : 'The token reached the repository but cannot read its files, so it will not be able to publish. '
+            + 'Re-create it with “Contents: Read and write”. '
+            + (info.contentsError || '');
         return;
       }
 
@@ -937,6 +941,74 @@
     e.returnValue = '';
   });
 
+  /* ---------------- sign-in ---------------- */
+
+  const Auth = window.NDDAuth;
+  let booted = false;
+
+  function showPanel() {
+    document.body.classList.remove('signed-out');
+    document.body.classList.add('signed-in');
+    const who = $('whoami');
+    if (who) who.textContent = Auth.currentUser();
+    if (!booted) { booted = true; boot(); }
+  }
+
+  function showLogin() {
+    document.body.classList.remove('signed-in');
+    document.body.classList.add('signed-out');
+    const user = $('loginUser');
+    if (user) setTimeout(() => user.focus(), 50);
+  }
+
+  const loginForm = $('loginForm');
+  if (loginForm) {
+    loginForm.addEventListener('submit', async e => {
+      e.preventDefault();
+      const btn = $('loginBtn');
+      const errorEl = $('loginError');
+      errorEl.textContent = '';
+      btn.disabled = true;
+      btn.textContent = 'Signing in…';
+
+      try {
+        const result = await Auth.signIn(
+          $('loginUser').value, $('loginPass').value, $('loginRemember').checked);
+        if (result.ok) {
+          $('loginPass').value = '';
+          showPanel();
+        } else {
+          errorEl.textContent = result.error;
+          $('loginPass').select();
+        }
+      } catch (err) {
+        errorEl.textContent = 'Could not sign in. Please try again.';
+        console.error('Sign-in failed:', err);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Sign In';
+      }
+    });
+
+    $('peekBtn').addEventListener('click', () => {
+      const field = $('loginPass');
+      const show = field.type === 'password';
+      field.type = show ? 'text' : 'password';
+      $('peekBtn').textContent = show ? 'Hide' : 'Show';
+      $('peekBtn').setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+      field.focus();
+    });
+  }
+
+  if ($('signOutBtn')) {
+    $('signOutBtn').addEventListener('click', () => {
+      if (isDirty && !confirm('You have unsaved changes. Sign out anyway?')) return;
+      Auth.signOut();
+      isDirty = false; // don't trigger the beforeunload prompt on reload
+      location.reload();
+    });
+  }
+
   /* ---------------- boot ---------------- */
 
   async function boot() {
@@ -954,5 +1026,7 @@
     renderNotices();
   }
 
-  boot();
+  // Only load the menu once the admin is signed in.
+  if (Auth.isSignedIn()) showPanel();
+  else showLogin();
 })();
