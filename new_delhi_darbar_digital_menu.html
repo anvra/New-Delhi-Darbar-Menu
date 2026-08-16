@@ -1,0 +1,790 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f5f2ed">
+<meta name="description" content="New Delhi Darbar Restaurant digital menu">
+<title>New Delhi Darbar — Menu</title>
+<style>
+   :root{
+    --bg:#f5f2ed;
+    --surface:#faf8f5;
+    --surface-2:#ece8e2;
+    --text:#1a1816;
+    --muted:#6b6460;
+    --line:#dad5cf;
+    --accent:#e0824a;
+    --accent-soft:#f0e4da;
+    --shadow:0 14px 36px rgba(30,24,18,.06);
+    --watermark:rgba(26,24,22,.055);
+    --radius:14px;
+    --max:1120px;
+  }
+  html[data-theme="dark"]{
+    --bg:#121110;
+    --surface:#1b1918;
+    --surface-2:#262322;
+    --text:#f3f0ed;
+    --muted:#b2aaa4;
+    --line:#383330;
+    --accent:#e0824a;
+    --accent-soft:#3a2a1d;
+    --shadow:0 18px 42px rgba(0,0,0,.22);
+    --watermark:rgba(243,240,237,.055);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue",Arial,sans-serif;
+    line-height:1.45;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+  button,a{font:inherit}
+  button{color:inherit}
+  a{color:inherit;text-decoration:none}
+  body::before{
+    content:"NEW DELHI DARBAR";
+    position:fixed;
+    z-index:0;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    pointer-events:none;
+    user-select:none;
+    color:var(--watermark);
+    font-size:clamp(42px,9vw,120px);
+    font-weight:750;
+    letter-spacing:.14em;
+    line-height:1;
+    white-space:nowrap;
+    transform:rotate(-14deg);
+  }
+  .shell{width:min(calc(100% - 28px),var(--max));margin:auto;position:relative;z-index:1}
+
+  .brand-strip{
+    display:flex;align-items:center;justify-content:center;
+    margin:18px auto 2px;
+  }
+  .brand-strip-inner{
+    width:100%;max-width:760px;
+    display:flex;flex-wrap:wrap;align-items:center;justify-content:center;
+    gap:7px 10px;
+    text-align:center;
+  }
+  .tag-chip{
+    border:1px solid var(--line);
+    background:color-mix(in srgb,var(--surface) 88%,var(--accent) 12%);
+    border-radius:999px;
+    padding:7px 11px;
+    font-size:11px;line-height:1.25;
+    letter-spacing:.02em;
+    box-shadow:0 5px 16px rgba(55,43,29,.045);
+  }
+  .tag-chip.primary{
+    border-color:var(--accent);
+    background:var(--accent);
+    font-weight:780;
+    color:#fff;
+    box-shadow:0 7px 18px color-mix(in srgb,var(--accent) 22%,transparent);
+  }
+  .tag-chip.specialty{
+    font-weight:680;
+    color:var(--accent);
+    border-color:color-mix(in srgb,var(--accent) 42%,var(--line));
+    background:color-mix(in srgb,var(--accent-soft) 48%,var(--surface));
+  }
+  .tag-chip.meta{
+    color:var(--muted);
+    background:var(--surface);
+  }
+  html[data-theme="dark"] .tag-chip.primary{
+    background:var(--accent);
+    border-color:var(--accent);
+    color:#181210;
+    box-shadow:0 8px 20px rgba(224,130,74,.18);
+  }
+  html[data-theme="dark"] .tag-chip.specialty{
+    color:var(--accent);
+    border-color:color-mix(in srgb,var(--accent) 48%,var(--line));
+    background:color-mix(in srgb,var(--accent-soft) 70%,var(--surface));
+  }
+  @media(max-width:520px){
+    .brand-strip{margin-top:15px}
+    .brand-strip-inner{gap:6px 7px;padding:0 8px}
+    .tag-chip{font-size:10px;padding:7px 9px}
+    .tag-chip.meta{width:100%;}
+  }
+  .topbar{position:sticky;top:0;z-index:20;
+    backdrop-filter:saturate(140%) blur(16px);
+    background:color-mix(in srgb,var(--bg) 88%,transparent);
+    border-bottom:1px solid color-mix(in srgb,var(--line) 70%,transparent);
+  }
+  .topbar-inner{
+    min-height:66px;display:flex;align-items:center;justify-content:space-between;gap:12px;
+  }
+  .brand{display:flex;flex-direction:column;min-width:0}
+  .brand strong{font-size:15px;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
+  .brand span{font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+  .actions{display:flex;align-items:center;gap:8px}
+  .language-picker{position:relative}
+  .icon-btn,.lang-btn{
+    border:1px solid var(--line);background:var(--surface);
+    min-height:40px;border-radius:10px;cursor:pointer;
+    display:inline-flex;align-items:center;justify-content:center;
+    transition:transform .18s ease,border-color .18s ease,background .18s ease;
+  }
+  .icon-btn{width:40px}
+  .lang-btn{padding:0 11px;font-size:12px;font-weight:600;letter-spacing:.03em}
+  .icon-btn:hover,.lang-btn:hover{transform:translateY(-1px);border-color:var(--accent)}
+  .icon-btn:focus-visible,.lang-btn:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+  .hero{padding:44px 0 30px;text-align:center}
+  .eyebrow{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);font-weight:700}
+  h1{font-size:clamp(32px,7vw,58px);line-height:1.02;letter-spacing:-.055em;margin:10px 0 8px;font-weight:760}
+  .hero-rule{width:54px;height:1px;background:var(--accent);margin:18px auto}
+  .contact{display:flex;justify-content:center;flex-wrap:wrap;gap:8px 18px;font-size:13px;color:var(--muted)}
+  .contact a{padding:3px 0;border-bottom:1px solid transparent}
+  .contact a.phone{font-weight:800;font-style:italic}
+  .contact a:hover{border-color:var(--accent);color:var(--text)}
+  .toolbar{
+    position:sticky;
+    top:66px;
+    z-index:15;
+    display:flex;
+    gap:8px;
+    overflow-x:auto;
+    overflow-y:hidden;
+    padding:9px 0 12px;
+    padding-right:18px;
+    scrollbar-width:none;
+    -webkit-overflow-scrolling:touch;
+    scroll-padding-left:14px;
+    scroll-padding-right:18px;
+    background:color-mix(in srgb,var(--bg) 94%,transparent);
+    backdrop-filter:saturate(140%) blur(12px);
+    border-bottom:1px solid color-mix(in srgb,var(--line) 65%,transparent);
+  }
+  .toolbar::-webkit-scrollbar{display:none}
+  .cat-link{
+    flex:0 0 auto;
+    min-width:max-content;
+    border:1px solid var(--line);
+    background:var(--surface);
+    border-radius:999px;
+    padding:9px 13px;
+    font-size:12px;
+    font-weight:650;
+    white-space:nowrap;
+    transition:transform .18s ease,border-color .18s ease,background .18s ease,color .18s ease;
+  }
+  .cat-link:hover{border-color:var(--accent)}
+  .cat-link.active{
+    color:#fff;background:var(--accent);border-color:var(--accent);
+    box-shadow:0 6px 16px color-mix(in srgb,var(--accent) 20%,transparent);
+  }
+  html[data-theme="dark"] .cat-link.active{color:#181210}.cat-link:active{transform:scale(.98)}
+  main{padding-bottom:34px}
+  .grid{display:grid;grid-template-columns:1fr;gap:14px}
+  .card{
+    background:var(--surface);border:1px solid var(--line);
+    border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;
+  }
+  .card.section-active{border-color:color-mix(in srgb,var(--accent) 42%,var(--line))}
+  .card.section-active .card-head{background:color-mix(in srgb,var(--accent-soft) 28%,var(--surface))}
+  .card.section-active .card-head h2{color:var(--accent)}
+  .card-head{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:17px 18px 13px;border-bottom:1px solid var(--line);
+  }
+  .card h2{font-size:16px;letter-spacing:-.02em;margin:0;font-weight:720}.card-head h2::after{content:"";display:block;width:24px;height:2px;background:var(--accent);margin-top:8px;border-radius:999px}
+  .count{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .items{padding:3px 18px 9px}
+  .item{
+    display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;
+    padding:15px 0;border-bottom:1px solid color-mix(in srgb,var(--line) 65%,transparent);transition:transform .28s cubic-bezier(.16,1,.3,1),background .28s ease;
+  }
+  .item:last-child{border-bottom:0}.item:hover{transform:translateX(3px)}
+  .item-name{font-size:14px;font-weight:620;letter-spacing:-.012em}
+  .item-note{font-size:11px;color:var(--muted);margin-top:3px}
+  .price{
+    font-size:13px;font-weight:850;white-space:nowrap;
+    font-variant-numeric:tabular-nums;color:var(--accent);
+    letter-spacing:-.01em;padding:5px 8px;border-radius:8px;
+    background:color-mix(in srgb,var(--accent-soft) 58%,var(--surface));
+    border:1px solid color-mix(in srgb,var(--accent) 26%,var(--line));
+    align-self:start;
+  }
+  html[data-theme="dark"] .notice-label{color:#181210}
+  html[data-theme="dark"] .price{
+    color:var(--accent);
+    background:color-mix(in srgb,var(--accent-soft) 78%,var(--surface));
+    border-color:color-mix(in srgb,var(--accent) 34%,var(--line));
+  }
+  .source-price-missing{color:var(--muted);font-weight:550;font-size:11px;max-width:95px;text-align:right}
+  .notice{
+    margin:0 0 14px;padding:0;background:transparent;
+    border:0;
+    display:grid;gap:10px;
+  }
+  .notice-section{
+    padding:16px 16px 17px;
+    background:linear-gradient(135deg,
+      color-mix(in srgb,var(--accent-soft) 52%,var(--surface)),
+      var(--surface));
+    border:1px solid color-mix(in srgb,var(--accent) 27%,var(--line));
+    border-left:3px solid var(--accent);
+    border-radius:16px;
+    box-shadow:var(--shadow);
+  }
+  html[data-theme="dark"] .notice-section{
+    background:linear-gradient(135deg,
+      color-mix(in srgb,var(--accent-soft) 70%,var(--surface)),
+      var(--surface));
+  }
+  .notice-label{
+    display:inline-flex;align-items:center;gap:8px;margin:0 0 8px;
+    padding:5px 8px;border-radius:999px;
+    font-size:10px;font-weight:850;letter-spacing:.08em;text-transform:uppercase;
+    color:#fff;background:var(--accent);
+  }
+  .notice-label::before{
+    content:"";width:5px;height:5px;border-radius:50%;background:currentColor;flex:0 0 auto;
+  }
+  .notice p{margin:0;color:var(--muted);font-size:12px;line-height:1.65}
+  .notice p strong{color:var(--text);font-weight:700}
+  .bulk-list{list-style:none;margin:10px 0 11px;padding:0;display:grid;gap:6px;color:var(--text);font-size:12px}
+  .bulk-list li{display:flex;align-items:center;gap:8px;min-height:30px;padding:6px 9px;border:1px solid var(--line);border-radius:10px;background:var(--surface);font-weight:620}
+  .bulk-list li::before{content:"";width:4px;height:4px;border-radius:50%;background:var(--accent);flex:0 0 auto}
+  .bulk-price{padding-top:10px;margin-top:10px;border-top:1px solid var(--line)}
+  .bulk-price strong{color:var(--text)}
+  footer{border-top:1px solid var(--line);padding:24px 0 42px}
+  .footer-grid{display:grid;gap:12px}
+  .address{font-size:13px;color:var(--muted)}
+  .address strong{color:var(--text);display:block;margin-bottom:4px}
+  .source-note{font-size:10px;color:var(--muted);margin-top:18px;line-height:1.6}
+  .lang-menu{
+    position:absolute;
+    top:calc(100% + 10px);
+    right:0;
+    width:188px;
+    padding:7px;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:16px;
+    box-shadow:0 18px 44px rgba(20,27,23,.14);
+    opacity:0;
+    visibility:hidden;
+    transform:translateY(-6px) scale(.98);
+    transform-origin:top right;
+    transition:opacity .16s ease,transform .16s ease,visibility .16s ease;
+  }
+  .lang-menu.open{
+    opacity:1;
+    visibility:visible;
+    transform:translateY(0) scale(1);
+  }
+  .lang-menu-header{
+    padding:7px 10px 8px;
+    font-size:10px;
+    font-weight:700;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--muted);
+  }
+  .lang-option{
+    width:100%;
+    min-height:44px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:9px 10px;
+    border:0;
+    background:transparent;
+    color:var(--text);
+    border-radius:11px;
+    cursor:pointer;
+    text-align:left;
+    transition:background .14s ease;
+  }
+  .lang-option:hover,.lang-option:focus-visible{background:var(--surface-2);outline:none}
+  .lang-option[aria-checked="true"]{background:var(--accent-soft)}
+  .lang-option-main{display:flex;align-items:center;gap:10px;min-width:0}
+  .lang-code{
+    width:28px;height:28px;display:grid;place-items:center;
+    border:1px solid var(--line);border-radius:8px;
+    font-size:9px;font-weight:750;letter-spacing:.04em;
+    color:var(--muted);background:var(--surface);
+  }
+  .lang-option[aria-checked="true"] .lang-code{
+    color:var(--accent);border-color:color-mix(in srgb,var(--accent) 45%,var(--line));
+  }
+  .lang-name{font-size:13px;font-weight:600;line-height:1.1}
+  .lang-native{font-size:11px;color:var(--muted);margin-top:2px}
+  .lang-check{width:16px;height:16px;opacity:0;color:var(--accent);flex:0 0 auto}
+  .lang-option[aria-checked="true"] .lang-check{opacity:1}
+  @media(max-width:520px){
+    .lang-menu{
+      right:-4px;
+      width:min(188px,calc(100vw - 28px));
+    }
+  }
+  @media(max-width:520px){
+    .notice{gap:8px}
+    .notice-section{padding:14px 14px 15px;border-radius:14px}
+    .notice-label{font-size:10px;margin-bottom:7px}
+    .notice p{font-size:11.5px;line-height:1.62}
+    .bulk-list{gap:5px;margin:9px 0 10px}
+    .bulk-list li{min-height:32px;padding:6px 8px;font-size:11.5px}
+    .bulk-price{padding-top:9px;margin-top:9px}
+  }
+
+  @media(max-width:699px){
+    .toolbar{
+      top:66px;
+      margin-left:-14px;
+      margin-right:-14px;
+      padding-left:14px;
+      padding-right:24px;
+      gap:7px;
+      overscroll-behavior-x:contain;
+    }
+    .cat-link{
+      padding:9px 12px;
+      font-size:11.5px;
+    }
+  }
+  @media(min-width:700px){
+    .shell{width:min(calc(100% - 48px),var(--max))}
+    .hero{padding-top:60px}
+    .grid{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
+    .footer-grid{grid-template-columns:1fr auto;align-items:end}
+    .notice{grid-column:1/-1}
+  }
+  @media(min-width:980px){
+    .grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .hero{padding-bottom:38px}
+  }
+  @media(max-width:520px){
+    body::before{
+      font-size:clamp(30px,10vw,54px);
+      letter-spacing:.10em;
+      transform:rotate(-12deg);
+    }
+  }
+  @media(prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto}
+    *{transition:none!important}
+  }
+</style>
+<!--
+  Taste Skill application: premium hospitality redesign.
+  Design read: premium restaurant menu for phone-first customers.
+  Dials: DESIGN_VARIANCE 6 / MOTION_INTENSITY 4 / VISUAL_DENSITY 3.
+  Direction: restrained cold-luxury, one accent, typography-first, minimal elevation, consistent radius.
+-->
+</head>
+<body>
+<header class="topbar">
+  <div class="shell topbar-inner">
+    <a class="brand" href="#" aria-label="New Delhi Darbar home">
+      <strong>New Delhi Darbar</strong><span>Restaurant</span>
+    </a>
+    <div class="actions">
+      <div class="language-picker">
+        <button class="lang-btn" id="langButton" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="langMenu">
+          <span id="langButtonLabel">English</span>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <div class="lang-menu" id="langMenu" role="menu" aria-label="Choose language">
+          <div class="lang-menu-header">Language</div>
+          <button class="lang-option" type="button" data-lang="en" role="menuitemradio" aria-checked="true">
+            <span class="lang-option-main"><span class="lang-code">EN</span><span class="lang-native">English</span></span>
+            <svg class="lang-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
+          </button>
+          <button class="lang-option" type="button" data-lang="hi" role="menuitemradio" aria-checked="false">
+            <span class="lang-option-main"><span class="lang-code">हि</span><span class="lang-native">हिन्दी</span></span>
+            <svg class="lang-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
+          </button>
+          <button class="lang-option" type="button" data-lang="gu" role="menuitemradio" aria-checked="false">
+            <span class="lang-option-main"><span class="lang-code">ગુ</span><span class="lang-native">ગુજરાતી</span></span>
+            <svg class="lang-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
+          </button>
+        </div>
+      </div>
+      <button class="icon-btn" id="themeButton" type="button" aria-label="Switch theme" title="Switch theme">
+        <svg id="themeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+          <path d="M21 12.8A8.5 8.5 0 1 1 11.2 3 6.7 6.7 0 0 0 21 12.8Z"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+  <section class="hero">
+    <div class="eyebrow" data-i18n="restaurant">Restaurant</div>
+    <h1>New Delhi Darbar</h1>
+    <div class="hero-rule"></div>
+    <div class="brand-strip" aria-label="Restaurant highlights">
+      <div class="brand-strip-inner">
+        <span class="tag-chip primary">Serving Since 2001</span>
+        <span class="tag-chip specialty">Chokha na Rotla &amp; Chokha na Pudaa Specialists</span>
+        <span class="tag-chip meta">Bulk Orders Welcome • Authentic Taste • Consistent Quality</span>
+      </div>
+    </div>
+    <div class="contact">
+      <a class="phone" href="tel:+917567587816">+91 75675 87816</a>
+      <a class="phone" href="tel:+919712052249">+91 97120 52249</a>
+    </div>
+  </section>
+
+  <nav class="toolbar" aria-label="Menu categories">
+    <a class="cat-link" href="#chicken" data-cat="chicken">Chicken</a>
+    <a class="cat-link" href="#mutton" data-cat="mutton">Mutton</a>
+    <a class="cat-link" href="#fish" data-cat="fish">Fish</a>
+    <a class="cat-link" href="#rice" data-cat="rice">Rice</a>
+    <a class="cat-link" href="#roti" data-cat="roti">Roti</a>
+    <a class="cat-link" href="#beverages" data-cat="beverages">Cold Beverages</a>
+  </nav>
+
+  <main>
+    <div class="grid">
+      <section class="card" id="chicken">
+        <div class="card-head"><h2 data-i18n="chicken">Chicken Item</h2><span class="count">7</span></div>
+        <div class="items">
+          <div class="item"><div><div class="item-name" data-en="Chicken Masala" data-hi="चिकन मसाला" data-gu="ચિકન મસાલા">Chicken Masala</div></div><div class="price">80 Rs</div></div>
+          <div class="item"><div><div class="item-name" data-en="Chicken Kadai" data-hi="चिकन कड़ाई" data-gu="ચિકન કડાઈ">Chicken Kadai</div></div><div class="price">80 Rs</div></div>
+          <div class="item"><div><div class="item-name" data-en="Chicken Tikka(Fry)" data-hi="चिकन टिक्का (फ्राई)" data-gu="ચિકન ટિક્કા (ફ્રાય)">Chicken Tikka(Fry)</div></div><div class="price">80 Rs</div></div>
+          <div class="item"><div><div class="item-name" data-en="Chicken Tikka(Gravy)" data-hi="चिकन टिक्का (ग्रेवी)" data-gu="ચિકન ટિક્કા (ગ્રેવી)">Chicken Tikka(Gravy)</div></div><div class="price">90 Rs</div></div>
+          <div class="item"><div><div class="item-name" data-en="Dry Chicken" data-hi="सूखी चिकन" data-gu="સૂકી ચિકન">Dry Chicken</div></div><div class="price">100 Rs</div></div>
+          <div class="item"><div><div class="item-name" data-en="Hyderabadi Chicken" data-hi="हैदराबादी चिकन" data-gu="હૈદરાબાદી ચિકન">Hyderabadi Chicken</div></div><div class="price">100 Rs</div></div>
+          <div class="item"><div><div class="item-name" data-en="Chicken Biryani" data-hi="चिकन बिरयानी" data-gu="ચિકન બિરયાની">Chicken Biryani</div></div><div class="price">90 Rs</div></div>
+        </div>
+      </section>
+
+      <section class="card" id="mutton">
+        <div class="card-head"><h2 data-i18n="mutton">Mutton Item</h2><span class="count">5</span></div>
+        <div class="items">
+          <div class="item"><div><div class="item-name" data-en="Mutton Masala" data-hi="मटन मसाला" data-gu="મટન મસાલા">Mutton Masala</div></div><div class="price">130 Rs</div></div>
+          <div class="item"><div><div class="item-name" data-en="Mutton Kadai" data-hi="मटन कड़ाई" data-gu="મટન કડાઈ">Mutton Kadai</div></div><div class="price">130 Rs</div></div>
+          <div class="item"><div><div class="item-name" data-en="Khima Masala" data-hi="कीमा मसाला" data-gu="ખીમા મસાલા">Khima Masala</div></div><div class="price">100 Rs</div></div>
+          <div class="item"><div><div class="item-name" data-en="Kebab (Gravy)" data-hi="कबाब (ग्रेवी)" data-gu="કબાબ (ગ્રેવી)">Kebab (Gravy)</div></div><div class="price">130 Rs</div></div>
+          <div class="item"><div><div class="item-name" data-en="Kebab (Fry)" data-hi="कबाब (फ्राई)" data-gu="કબાબ (ફ્રાય)">Kebab (Fry)</div></div><div class="price">100 Rs</div></div>
+        </div>
+      </section>
+
+      <section class="card" id="fish">
+        <div class="card-head"><h2 data-i18n="fish">Fish Item</h2><span class="count">3</span></div>
+        <div class="items">
+          <div class="item"><div><div class="item-name" data-en="Paplet Fry" data-hi="पापलेट फ्राई" data-gu="પેપલેટ ફ્રાય">Paplet Fry</div></div><div class="price">100 Rs</div></div>
+          <div class="item"><div><div class="item-name" data-en="Jinga(Gravy)" data-hi="झींगा (ग्रेवी)" data-gu="જીંગા (ગ્રેવી)">Jinga(Gravy)</div></div><div class="price">100 Rs</div></div>
+          <div class="item"><div><div class="item-name" data-en="Fish Fry" data-hi="मछली फ्राई" data-gu="મચ્છી ફ્રાય">Fish Fry</div></div><div class="source-price-missing" data-i18n="notListed">Price not shown in source</div></div>
+        </div>
+      </section>
+
+      <section class="card" id="rice">
+        <div class="card-head"><h2 data-i18n="rice">Rice</h2><span class="count">2</span></div>
+        <div class="items">
+          <div class="item"><div><div class="item-name" data-en="Biryani Rice" data-hi="बिरयानी चावल" data-gu="બિરયાની રાઇસ">Biryani Rice</div></div><div class="price">30 Rs</div></div>
+          <div class="item"><div><div class="item-name" data-en="Plane Rice" data-hi="सादा चावल" data-gu="સાદા રાઇસ">Plane Rice</div></div><div class="price">30 Rs</div></div>
+        </div>
+      </section>
+
+      <section class="card" id="roti">
+        <div class="card-head"><h2 data-i18n="roti">Roti</h2><span class="count">3</span></div>
+        <div class="items">
+          <div class="item"><div><div class="item-name" data-en="Plain Roti" data-hi="सादी रोटी" data-gu="ઘઉં ની રોટલી">Plain Roti</div></div><div class="price">5 Rs</div></div>
+          <div class="item"><div><div class="item-name" data-en="Chokha na Rotla" data-hi="चावल के रोटला" data-gu="ચોખા ના રોટલા">Chokha na Rotla</div></div><div class="price">5 Rs</div></div>
+          <div class="item"><div><div class="item-name" data-en="Chokha na Pudaa" data-hi="चावल के पुड़ा" data-gu="ચોખા ના પુડા">Chokha na Pudaa</div></div><div class="price">5 Rs</div></div>
+        </div>
+      </section>
+
+      <section class="card" id="beverages">
+        <div class="card-head"><h2 data-i18n="beverages">Cold Beverages</h2><span class="count">3</span></div>
+        <div class="items">
+          <div class="item"><div><div class="item-name" data-en="Mineral Water" data-hi="मिनरल वाटर" data-gu="મિનરલ વોટર">Mineral Water</div></div><div class="price">10/20 Rs</div></div>
+          <div class="item"><div><div class="item-name" data-en="Jeera" data-hi="जीरा" data-gu="જીરા">Jeera</div></div><div class="price">10 Rs</div></div>
+          <div class="item"><div><div class="item-name" data-en="Soft Drinks" data-hi="सॉफ्ट ड्रिंक्स" data-gu="સોફ્ટ ડ્રિંક્સ">Soft Drinks</div></div><div class="price">20/40 Rs</div></div>
+        </div>
+      </section>
+
+      <aside class="notice" aria-label="Restaurant notes">
+        <section class="notice-section">
+          <h3 class="notice-label" data-i18n="orderNoteTitle">Fresh preparation</h3>
+          <p data-i18n-html="orderNote"><strong>Chicken, Mutton &amp; Fish</strong> are prepared fresh as per your order and preference. Quantities and preparation can be customized according to your requirements. Prices may vary based on the quality, quantity, and preparation of the food.</p>
+        </section>
+        <section class="notice-section">
+          <h3 class="notice-label" data-i18n="bulkTitle">Special Note</h3>
+          <p data-i18n-html="bulkIntro">We also accept <strong>bulk quantity orders</strong> for:</p>
+          <ul class="bulk-list">
+            <li data-en="Plain Roti" data-hi="सादी रोटी" data-gu="ઘઉં ની રોટલી">Plain Roti</li>
+            <li data-en="Chokha na Rotla" data-hi="चावल के रोटला" data-gu="ચોખા ના રોટલા">Chokha na Rotla</li>
+            <li data-en="Chokha na Pudaa" data-hi="चावल के पुड़ा" data-gu="ચોખા ના પુડા">Chokha na Pudaa</li>
+          </ul>
+          <p class="bulk-price" data-i18n-html="bulkPricing"><strong>Special bulk-order pricing:</strong> The price remains <strong>the same even for large quantities</strong>. Please place your order in advance for bulk quantities.</p>
+        </section>
+      </aside>
+    </div>
+  </main>
+
+  <footer>
+    <div class="footer-grid">
+      <div class="address">
+        <strong data-i18n="addressLabel">Address</strong>
+        <a href="https://maps.app.goo.gl/PcJ4x3PgARtX2wjEA" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:5px;border-bottom:1px solid transparent;transition:border-color .18s ease,color .18s ease"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:0 0 auto"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7Z"/><circle cx="12" cy="9" r="2.5"/></svg>Opp, Masjid, Nana Taiwad, Valsad. 396001</a>
+      </div>
+      <div class="contact">
+        <a class="phone" href="tel:+917567587816">+91 75675 87816</a>
+        <a class="phone" href="tel:+919712052249">+91 97120 52249</a>
+      </div>
+    </div>
+    <div class="source-note" data-i18n="sourceNote">Prices and menu wording are preserved from the supplied menu. No tax or service-charge information is stated in the source.</div>
+  </footer>
+</div>
+
+<script>
+(() => {
+  const root = document.documentElement;
+  const themeButton = document.getElementById('themeButton');
+  const themeIcon = document.getElementById('themeIcon');
+  const langButton = document.getElementById('langButton');
+  const langMenu = document.getElementById('langMenu');
+  const langButtonLabel = document.getElementById('langButtonLabel');
+  const languagePicker = document.querySelector('.language-picker');
+  const themeMeta = document.querySelector('meta[name="theme-color"]');
+  const STORAGE_THEME = 'ndd-theme';
+  const STORAGE_LANG = 'ndd-language';
+
+  const translations = {
+    en:{
+      restaurant:'Restaurant', chicken:'Chicken Item', mutton:'Mutton Item', fish:'Fish Item',
+      rice:'Rice', roti:'Roti', beverages:'Cold Beverages', notListed:'Price not shown in source',
+      orderNoteTitle:'Fresh preparation',
+      orderNote:'<strong>Chicken, Mutton &amp; Fish</strong> are prepared fresh as per your order and preference. Quantities and preparation can be customized according to your requirements. Prices may vary based on the quality, quantity, and preparation of the food.',
+      bulkTitle:'Special Note',
+      bulkIntro:'We also accept <strong>bulk quantity orders</strong> for:',
+      bulkPricing:'<strong>Special bulk-order pricing:</strong> The price remains <strong>the same even for large quantities</strong>. Please place your order in advance for bulk quantities.',
+      stockNote:'Note: Whatever is in the stock will be served.',
+      addressLabel:'Address',
+      sourceNote:'Prices and menu wording are preserved from the supplied menu. No tax or service-charge information is stated in the source.'
+    },
+    hi:{
+      restaurant:'रेस्तरां', chicken:'चिकन आइटम', mutton:'मटन आइटम', fish:'फिश आइटम',
+      rice:'चावल', roti:'रोटी', beverages:'कोल्ड बेवरेजेज', notListed:'स्रोत में कीमत नहीं दी गई है',
+      orderNoteTitle:'ताज़ा तैयारी',
+      orderNote:'<strong>चिकन, मटन और मछली</strong> आपके ऑर्डर और पसंद के अनुसार ताज़ा तैयार किए जाते हैं। मात्रा और तैयारी आपकी आवश्यकता के अनुसार बदली जा सकती है। भोजन की गुणवत्ता, मात्रा और तैयारी के अनुसार कीमत अलग हो सकती है।',
+      bulkTitle:'विशेष सूचना',
+      bulkIntro:'हम <strong>बड़ी मात्रा के ऑर्डर</strong> भी स्वीकार करते हैं:',
+      bulkPricing:'<strong>विशेष बल्क-ऑर्डर मूल्य:</strong> बड़ी मात्रा में भी <strong>कीमत समान रहती है</strong>। बड़ी मात्रा के लिए कृपया पहले से ऑर्डर करें।',
+      stockNote:'नोट: स्टॉक में जो उपलब्ध होगा, वही परोसा जाएगा।',
+      addressLabel:'पता',
+      sourceNote:'कीमतें और मेनू की मूल जानकारी दिए गए मेनू के अनुसार रखी गई हैं। स्रोत में टैक्स या सर्विस चार्ज की जानकारी नहीं दी गई है।'
+    },
+    gu:{
+      restaurant:'રેસ્ટોરન્ટ', chicken:'ચિકન આઇટમ', mutton:'મટન આઇટમ', fish:'ફિશ આઈટમ',
+      rice:'રાઇસ', roti:'રોટી', beverages:'કોલ્ડ બેવરેજિસ', notListed:'સ્રોતમાં કિંમત દર્શાવેલી નથી',
+      orderNoteTitle:'તાજી તૈયારી',
+      orderNote:'<strong>ચિકન, મટન અને ફિશ</strong> તમારા ઓર્ડર અને પસંદગી મુજબ તાજા તૈયાર કરવામાં આવે છે. માત્રા અને તૈયારી તમારી જરૂરિયાત મુજબ કસ્ટમાઇઝ કરી શકાય છે. ખોરાકની ગુણવત્તા, માત્રા અને તૈયારી મુજબ કિંમત અલગ હોઈ શકે છે.',
+      bulkTitle:'ખાસ નોંધ',
+      bulkIntro:'અમે <strong>મોટી માત્રાના ઓર્ડર</strong> પણ સ્વીકારીએ છીએ:',
+      bulkPricing:'<strong>ખાસ બલ્ક-ઓર્ડર કિંમત:</strong> મોટી માત્રા માટે પણ <strong>કિંમત સમાન રહેશે</strong>. મોટી માત્રા માટે કૃપા કરીને અગાઉથી ઓર્ડર આપો.',
+      stockNote:'નોંધ: સ્ટોકમાં જે ઉપલબ્ધ હશે તે જ પીરસવામાં આવશે.',
+      addressLabel:'સરનામું',
+      sourceNote:'કિંમતો અને મેનૂની મૂળ માહિતી આપેલા મેનૂ મુજબ જ રાખવામાં આવી છે. સ્રોતમાં ટેક્સ અથવા સર્વિસ ચાર્જની માહિતી દર્શાવેલી નથી.'
+    }
+  };
+
+  const langNames = {en:'English', hi:'हिन्दी', gu:'ગુજરાતી'};
+
+  /* Bug 6: sync theme-color meta with current theme */
+  function applyTheme(theme){
+    root.dataset.theme = theme;
+    localStorage.setItem(STORAGE_THEME, theme);
+    const dark = theme === 'dark';
+    if (themeMeta) themeMeta.content = dark ? '#121110' : '#f5f2ed';
+    themeButton.setAttribute('aria-label', dark ? 'Switch to light theme' : 'Switch to dark theme');
+    themeButton.title = dark ? 'Switch to light theme' : 'Switch to dark theme';
+    themeIcon.innerHTML = dark
+      ? '<circle cx="12" cy="12" r="3.2"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42"></path>'
+      : '<path d="M21 12.8A8.5 8.5 0 1 1 11.2 3 6.7 6.7 0 0 0 21 12.8Z"></path>';
+  }
+
+  /* Bug 5: also translate bulk-list items that have data-en/hi/gu */
+  function applyLanguage(lang){
+    const t = translations[lang];
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.dataset.i18n;
+      if (t[key] !== undefined) el.textContent = t[key];
+    });
+    document.querySelectorAll('[data-i18n-html]').forEach(el => {
+      const key = el.dataset.i18nHtml;
+      if (t[key] !== undefined) el.innerHTML = t[key];
+    });
+    document.querySelectorAll('[data-en]').forEach(el => {
+      el.textContent = el.dataset[lang] || el.dataset.en;
+    });
+    document.querySelectorAll('.cat-link').forEach(el => {
+      const key = el.dataset.cat;
+      el.textContent = t[key];
+    });
+    document.querySelectorAll('[data-lang]').forEach(el => {
+      el.setAttribute('aria-checked', String(el.dataset.lang === lang));
+    });
+    langButtonLabel.textContent = langNames[lang];
+    document.documentElement.lang = lang;
+    localStorage.setItem(STORAGE_LANG, lang);
+  }
+
+  const savedTheme = localStorage.getItem(STORAGE_THEME);
+  const initialTheme = savedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  applyTheme(initialTheme);
+
+  const savedLang = localStorage.getItem(STORAGE_LANG) || 'en';
+  applyLanguage(savedLang);
+
+  themeButton.addEventListener('click', () => {
+    applyTheme(root.dataset.theme === 'dark' ? 'light' : 'dark');
+  });
+
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'j') {
+      e.preventDefault();
+      applyTheme(root.dataset.theme === 'dark' ? 'light' : 'dark');
+    }
+    if (e.key === 'Escape') {
+      langMenu.classList.remove('open');
+      langButton.setAttribute('aria-expanded','false');
+    }
+  });
+
+  /* Bug 1: use setTimeout so focus() fires after visibility transition starts */
+  function setLanguageMenu(open){
+    langMenu.classList.toggle('open', open);
+    langButton.setAttribute('aria-expanded', String(open));
+    if(open){
+      const selected = langMenu.querySelector('[aria-checked="true"]');
+      if(selected) setTimeout(() => selected.focus(), 20);
+    }
+  }
+
+  langButton.addEventListener('click', () => {
+    setLanguageMenu(!langMenu.classList.contains('open'));
+  });
+
+  const languageOptions = [...langMenu.querySelectorAll('[data-lang]')];
+  languageOptions.forEach((btn, index) => {
+    btn.addEventListener('click', () => {
+      applyLanguage(btn.dataset.lang);
+      setLanguageMenu(false);
+      langButton.focus();
+    });
+    btn.addEventListener('keydown', e => {
+      if(e.key === 'ArrowDown'){
+        e.preventDefault();
+        languageOptions[(index + 1) % languageOptions.length].focus();
+      } else if(e.key === 'ArrowUp'){
+        e.preventDefault();
+        languageOptions[(index - 1 + languageOptions.length) % languageOptions.length].focus();
+      } else if(e.key === 'Home'){
+        e.preventDefault(); languageOptions[0].focus();
+      } else if(e.key === 'End'){
+        e.preventDefault(); languageOptions[languageOptions.length - 1].focus();
+      } else if(e.key === 'Escape'){
+        e.preventDefault(); setLanguageMenu(false); langButton.focus();
+      }
+    });
+  });
+
+  langButton.addEventListener('keydown', e => {
+    if(e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' '){
+      e.preventDefault();
+      setLanguageMenu(true);
+    }
+  });
+
+  document.addEventListener('click', e => {
+    if(!languagePicker.contains(e.target)) setLanguageMenu(false);
+  });
+
+  const categoryLinks = [...document.querySelectorAll('.cat-link')];
+  const categoryCards = [...document.querySelectorAll('.card[id]')];
+
+  /* Bug 2: scrollLock prevents observer from overriding click-set active state */
+  let scrollLock = false;
+  let scrollLockTimer = 0;
+
+  /* Bug 4: auto-scroll the active toolbar link into view on mobile */
+  function setActiveCategory(id){
+    categoryLinks.forEach(link => {
+      const active = link.getAttribute('href') === '#' + id;
+      link.classList.toggle('active', active);
+      if (active) {
+        link.setAttribute('aria-current','page');
+        link.scrollIntoView({block:'nearest', inline:'nearest', behavior:'smooth'});
+      } else {
+        link.removeAttribute('aria-current');
+      }
+    });
+    categoryCards.forEach(card => card.classList.toggle('section-active', card.id === id));
+  }
+
+  categoryLinks.forEach(link => {
+    link.addEventListener('click', event => {
+      event.preventDefault();
+      const id = link.getAttribute('href').slice(1);
+      const card = document.getElementById(id);
+      if (!card) return;
+
+      /* Bug 2: lock observer during programmatic scroll */
+      scrollLock = true;
+      clearTimeout(scrollLockTimer);
+      setActiveCategory(id);
+
+      const headerHeight = document.querySelector('.topbar')?.offsetHeight || 66;
+      const toolbarHeight = document.querySelector('.toolbar')?.offsetHeight || 54;
+      const top = card.getBoundingClientRect().top + window.scrollY - headerHeight - toolbarHeight - 10;
+      window.scrollTo({top, behavior:'smooth'});
+
+      /* Release lock after scroll settles */
+      scrollLockTimer = setTimeout(() => { scrollLock = false; }, 800);
+    });
+  });
+
+  /* Bug 3: track all intersecting entries globally; pick topmost visible */
+  const visibleCards = new Map();
+  const categoryObserver = new IntersectionObserver(entries => {
+    if (scrollLock) return; /* Bug 2 */
+    entries.forEach(e => {
+      if (e.isIntersecting) visibleCards.set(e.target.id, e.boundingClientRect.top);
+      else visibleCards.delete(e.target.id);
+    });
+    if (visibleCards.size) {
+      let topId = null, topY = Infinity;
+      visibleCards.forEach((y, id) => { if (y < topY) { topY = y; topId = id; } });
+      /* Re-read live position for accuracy */
+      let bestId = topId;
+      let bestY = Infinity;
+      visibleCards.forEach((_, id) => {
+        const el = document.getElementById(id);
+        if (el) {
+          const r = el.getBoundingClientRect().top;
+          if (r < bestY && r > -el.offsetHeight * 0.7) { bestY = r; bestId = id; }
+        }
+      });
+      setActiveCategory(bestId);
+    }
+  }, {rootMargin:'-120px 0px -40% 0px', threshold:[0, 0.1, 0.25]});
+
+  categoryCards.forEach(card => categoryObserver.observe(card));
+  setActiveCategory(categoryCards[0]?.id || 'chicken');
+
+})();
+</script>
+</body>
+</html>
