@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>New Delhi Darbar — Admin Panel</title>
+<script src="menu-data.js"></script>
+<style>
+  :root{
+    --bg:#f5f2ed; --surface:#faf8f5; --surface-2:#ece8e2; --text:#1a1816;
+    --muted:#6b6460; --line:#dad5cf; --accent:#e0824a; --accent-soft:#f0e4da;
+    --danger:#c0392b; --ok:#2e7d32; --radius:12px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;line-height:1.45}
+  a{color:var(--accent)}
+  .shell{max-width:1080px;margin:0 auto;padding:20px 16px 60px}
+  header{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  header h1{font-size:16px;margin:0;letter-spacing:-.01em}
+  header .sub{font-size:11px;color:var(--muted)}
+  .btn{border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:9px;padding:9px 14px;font-size:12.5px;font-weight:650;cursor:pointer;transition:transform .15s,border-color .15s}
+  .btn:hover{border-color:var(--accent);transform:translateY(-1px)}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn.danger{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 40%,var(--line))}
+  .btn.small{padding:6px 10px;font-size:11.5px}
+  .toolrow{display:flex;gap:8px;flex-wrap:wrap}
+  .status{font-size:12px;padding:6px 10px;border-radius:8px;display:none}
+  .status.show{display:inline-block}
+  .status.ok{background:color-mix(in srgb,var(--ok) 14%,var(--surface));color:var(--ok)}
+  section.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);margin:18px 0;padding:16px}
+  section.panel h2{font-size:14px;margin:0 0 12px;letter-spacing:.02em;display:flex;align-items:center;justify-content:space-between}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media(max-width:640px){.grid2{grid-template-columns:1fr}}
+  label{display:block;font-size:11px;color:var(--muted);margin:8px 0 4px;font-weight:650;text-transform:uppercase;letter-spacing:.04em}
+  input[type=text],textarea{width:100%;border:1px solid var(--line);background:var(--bg);color:var(--text);border-radius:8px;padding:9px 10px;font-size:13px;font-family:inherit}
+  textarea{resize:vertical;min-height:44px}
+  .cat-block{border:1px solid var(--line);border-radius:10px;margin:10px 0;background:var(--surface-2)}
+  .cat-header{display:flex;align-items:center;gap:8px;padding:10px 12px;cursor:pointer}
+  .cat-header input{flex:1}
+  .cat-body{padding:0 12px 12px;display:none}
+  .cat-body.open{display:block}
+  .item-row{display:grid;grid-template-columns:1fr 1fr 1fr 110px auto;gap:6px;align-items:center;margin:6px 0;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px}
+  @media(max-width:900px){.item-row{grid-template-columns:1fr}}
+  .item-row input{font-size:12.5px;padding:7px 8px}
+  .muted{color:var(--muted);font-size:11.5px}
+  .notice-block{border:1px solid var(--line);border-radius:10px;padding:12px;margin:10px 0;background:var(--surface-2)}
+  .bulk-item{display:flex;gap:6px;margin:4px 0}
+  .bulk-item input{flex:1}
+  .icon-btn{border:0;background:transparent;color:var(--danger);cursor:pointer;font-size:16px;padding:4px 8px}
+  .move-btn{border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:13px;padding:2px 6px}
+  code{background:var(--surface-2);padding:1px 5px;border-radius:5px;font-size:11px}
+  .hint{font-size:11.5px;color:var(--muted);margin-top:4px}
+  .field{margin-bottom:2px}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>New Delhi Darbar — Admin Panel</h1>
+    <div class="sub">Edit menu, categories, notices &amp; contact info — updates the live site instantly.</div>
+  </div>
+  <div class="toolrow">
+    <span class="status" id="status">Saved</span>
+    <button class="btn" id="viewSiteBtn" type="button">View Site ↗</button>
+    <button class="btn danger" id="resetBtn" type="button">Reset to Defaults</button>
+    <button class="btn primary" id="saveBtn" type="button">Save &amp; Publish</button>
+  </div>
+</header>
+
+<div class="shell">
+  <div class="hint" style="margin-top:14px">
+    This is a static GitHub Pages site (no backend), so <strong>Save &amp; Publish</strong> stores your changes in this
+    browser and instantly updates <a href="index.html" target="_blank">index.html</a> here. To make the change
+    permanent on the live site for everyone, click <strong>Download menu-data.js</strong> below and commit/replace
+    that file in the repo, then push to GitHub.
+  </div>
+
+  <section class="panel">
+    <h2>Brand &amp; Contact</h2>
+    <div class="grid2">
+      <div><label>Restaurant Name</label><input type="text" id="b_name"></div>
+      <div><label>Tagline</label><input type="text" id="b_tagline"></div>
+      <div><label>"Since" Chip</label><input type="text" id="b_since"></div>
+      <div><label>Specialty Chip</label><input type="text" id="b_specialty"></div>
+      <div style="grid-column:1/-1"><label>Meta Chip</label><input type="text" id="b_meta"></div>
+      <div><label>Phone 1</label><input type="text" id="b_phone1"></div>
+      <div><label>Phone 2</label><input type="text" id="b_phone2"></div>
+      <div style="grid-column:1/-1"><label>Address</label><input type="text" id="b_address"></div>
+      <div style="grid-column:1/-1"><label>Google Maps URL</label><input type="text" id="b_mapUrl"></div>
+    </div>
+    <label>Stock Note (English)</label><input type="text" id="b_stockEn">
+    <div class="grid2">
+      <div><label>Stock Note (Hindi)</label><input type="text" id="b_stockHi"></div>
+      <div><label>Stock Note (Gujarati)</label><input type="text" id="b_stockGu"></div>
+    </div>
+    <label>Source Note (English)</label><textarea id="b_sourceEn"></textarea>
+  </section>
+
+  <section class="panel">
+    <h2>Menu Categories &amp; Items <button class="btn small" id="addCatBtn" type="button">+ Add Category</button></h2>
+    <div class="hint">Category order here = navigation menu order on the site. Use ↑ ↓ to reorder.</div>
+    <div id="catList"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Notices <button class="btn small" id="addNoticeBtn" type="button">+ Add Notice</button></h2>
+    <div id="noticeList"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Export</h2>
+    <div class="toolrow">
+      <button class="btn" id="downloadBtn" type="button">Download menu-data.js</button>
+      <button class="btn" id="downloadJsonBtn" type="button">Download JSON backup</button>
+      <label class="btn" style="cursor:pointer">Import JSON<input type="file" id="importFile" accept="application/json" style="display:none"></label>
+    </div>
+    <div class="hint">Commit the downloaded <code>menu-data.js</code> to the repo root and push to GitHub Pages to make changes permanent for all visitors.</div>
+  </section>
+</div>
+
+<script>
+(() => {
+  const STORAGE_DATA = 'ndd-data-override';
+
+  function loadData(){
+    try {
+      const raw = localStorage.getItem(STORAGE_DATA);
+      if (raw) return JSON.parse(raw);
+    } catch(e){}
+    return JSON.parse(JSON.stringify(window.NDD_DATA));
+  }
+
+  let DATA = loadData();
+  const statusEl = document.getElementById('status');
+
+  function showStatus(msg, ok){
+    statusEl.textContent = msg;
+    statusEl.className = 'status show' + (ok ? ' ok' : '');
+    setTimeout(() => statusEl.classList.remove('show'), 2200);
+  }
+
+  function uid(){ return 'id' + Math.random().toString(36).slice(2, 9); }
+
+  // ---------- Brand fields ----------
+  function fillBrandForm(){
+    document.getElementById('b_name').value = DATA.brand.name || '';
+    document.getElementById('b_tagline').value = DATA.brand.tagline || '';
+    document.getElementById('b_since').value = DATA.brand.since || '';
+    document.getElementById('b_specialty').value = DATA.brand.specialty || '';
+    document.getElementById('b_meta').value = DATA.brand.meta || '';
+    document.getElementById('b_phone1').value = (DATA.brand.phones || [])[0] || '';
+    document.getElementById('b_phone2').value = (DATA.brand.phones || [])[1] || '';
+    document.getElementById('b_address').value = DATA.brand.address || '';
+    document.getElementById('b_mapUrl').value = DATA.brand.mapUrl || '';
+    document.getElementById('b_stockEn').value = (DATA.brand.stockNote || {}).en || '';
+    document.getElementById('b_stockHi').value = (DATA.brand.stockNote || {}).hi || '';
+    document.getElementById('b_stockGu').value = (DATA.brand.stockNote || {}).gu || '';
+    document.getElementById('b_sourceEn').value = (DATA.brand.sourceNote || {}).en || '';
+  }
+
+  function readBrandForm(){
+    DATA.brand.name = document.getElementById('b_name').value.trim();
+    DATA.brand.tagline = document.getElementById('b_tagline').value.trim();
+    DATA.brand.since = document.getElementById('b_since').value.trim();
+    DATA.brand.specialty = document.getElementById('b_specialty').value.trim();
+    DATA.brand.meta = document.getElementById('b_meta').value.trim();
+    const p1 = document.getElementById('b_phone1').value.trim();
+    const p2 = document.getElementById('b_phone2').value.trim();
+    DATA.brand.phones = [p1, p2].filter(Boolean);
+    DATA.brand.address = document.getElementById('b_address').value.trim();
+    DATA.brand.mapUrl = document.getElementById('b_mapUrl').value.trim();
+    DATA.brand.stockNote = DATA.brand.stockNote || {};
+    DATA.brand.stockNote.en = document.getElementById('b_stockEn').value;
+    DATA.brand.stockNote.hi = document.getElementById('b_stockHi').value;
+    DATA.brand.stockNote.gu = document.getElementById('b_stockGu').value;
+    DATA.brand.sourceNote = DATA.brand.sourceNote || {};
+    DATA.brand.sourceNote.en = document.getElementById('b_sourceEn').value;
+  }
+
+  // ---------- Categories & Items ----------
+  function renderCategories(){
+    const list = document.getElementById('catList');
+    list.innerHTML = '';
+    DATA.categories.forEach((cat, ci) => {
+      const block = document.createElement('div');
+      block.className = 'cat-block';
+      block.innerHTML = `
+        <div class="cat-header">
+          <button class="move-btn" data-act="up" title="Move up">↑</button>
+          <button class="move-btn" data-act="down" title="Move down">↓</button>
+          <input type="text" data-field="id" value="${cat.id}" placeholder="url-id (e.g. chicken)" style="max-width:140px">
+          <input type="text" data-field="en" value="${(cat.name.en||'').replace(/"/g,'&quot;')}" placeholder="Category name (English)">
+          <span class="muted">${cat.items.length} items</span>
+          <button class="btn small" data-act="toggle">Edit</button>
+          <button class="icon-btn" data-act="delete" title="Delete category">✕</button>
+        </div>
+        <div class="cat-body">
+          <div class="grid2">
+            <div><label>Name (Hindi)</label><input type="text" data-field="hi" value="${(cat.name.hi||'').replace(/"/g,'&quot;')}"></div>
+            <div><label>Name (Gujarati)</label><input type="text" data-field="gu" value="${(cat.name.gu||'').replace(/"/g,'&quot;')}"></div>
+          </div>
+          <label style="margin-top:12px">Items</label>
+          <div class="items-holder"></div>
+          <button class="btn small" data-act="addItem">+ Add Item</button>
+        </div>`;
+      list.appendChild(block);
+
+      const body = block.querySelector('.cat-body');
+      const header = block.querySelector('.cat-header');
+      header.addEventListener('click', e => {
+        if (e.target.closest('button')) return;
+        body.classList.toggle('open');
+      });
+
+      block.querySelector('[data-act=toggle]').addEventListener('click', () => body.classList.toggle('open'));
+      block.querySelector('[data-act=up]').addEventListener('click', () => { moveCategory(ci, -1); });
+      block.querySelector('[data-act=down]').addEventListener('click', () => { moveCategory(ci, 1); });
+      block.querySelector('[data-act=delete]').addEventListener('click', () => {
+        if (confirm(`Delete category "${cat.name.en}" and all its items?`)) {
+          DATA.categories.splice(ci, 1);
+          renderCategories();
+        }
+      });
+      block.querySelectorAll('.cat-header input').forEach(inp => {
+        inp.addEventListener('input', () => { cat[inp.dataset.field === 'id' ? 'id' : '_ignore'] = inp.value; if (inp.dataset.field==='en') cat.name.en = inp.value; if (inp.dataset.field==='id') cat.id = inp.value.trim(); });
+      });
+      block.querySelectorAll('.cat-body .grid2 input').forEach(inp => {
+        inp.addEventListener('input', () => { cat.name[inp.dataset.field] = inp.value; });
+      });
+
+      const itemsHolder = block.querySelector('.items-holder');
+      function renderItems(){
+        itemsHolder.innerHTML = '';
+        cat.items.forEach((it, ii) => {
+          const row = document.createElement('div');
+          row.className = 'item-row';
+          row.innerHTML = `
+            <input type="text" placeholder="English name" data-f="en" value="${(it.en||'').replace(/"/g,'&quot;')}">
+            <input type="text" placeholder="Hindi name" data-f="hi" value="${(it.hi||'').replace(/"/g,'&quot;')}">
+            <input type="text" placeholder="Gujarati name" data-f="gu" value="${(it.gu||'').replace(/"/g,'&quot;')}">
+            <input type="text" placeholder="Price" data-f="price" value="${(it.price||'').replace(/"/g,'&quot;')}">
+            <button class="icon-btn" title="Delete item">✕</button>`;
+          itemsHolder.appendChild(row);
+          row.querySelectorAll('input').forEach(inp => {
+            inp.addEventListener('input', () => { it[inp.dataset.f] = inp.value; });
+          });
+          row.querySelector('.icon-btn').addEventListener('click', () => {
+            cat.items.splice(ii, 1);
+            renderItems();
+            header.querySelector('.muted').textContent = cat.items.length + ' items';
+          });
+        });
+      }
+      renderItems();
+
+      block.querySelector('[data-act=addItem]').addEventListener('click', () => {
+        cat.items.push({ en: '', hi: '', gu: '', price: '' });
+        renderItems();
+        body.classList.add('open');
+        header.querySelector('.muted').textContent = cat.items.length + ' items';
+      });
+    });
+  }
+
+  function moveCategory(index, dir){
+    const newIndex = index + dir;
+    if (newIndex < 0 || newIndex >= DATA.categories.length) return;
+    const tmp = DATA.categories[index];
+    DATA.categories[index] = DATA.categories[newIndex];
+    DATA.categories[newIndex] = tmp;
+    renderCategories();
+  }
+
+  document.getElementById('addCatBtn').addEventListener('click', () => {
+    DATA.categories.push({ id: uid(), name: { en: 'New Category', hi: '', gu: '' }, items: [] });
+    renderCategories();
+  });
+
+  // ---------- Notices ----------
+  function renderNotices(){
+    const list = document.getElementById('noticeList');
+    list.innerHTML = '';
+    DATA.notices.forEach((n, ni) => {
+      const block = document.createElement('div');
+      block.className = 'notice-block';
+      const bulk = n.bulkList || [];
+      block.innerHTML = `
+        <div class="toolrow" style="justify-content:space-between">
+          <strong class="muted">Notice ${ni+1}</strong>
+          <button class="icon-btn" data-act="delete">✕ Delete</button>
+        </div>
+        <label>Title (English)</label><input type="text" data-f="title_en" value="${(n.title.en||'').replace(/"/g,'&quot;')}">
+        <label>Body HTML (English)</label><textarea data-f="html_en">${n.html.en||''}</textarea>
+        <div class="bulk-holder"></div>
+        <button class="btn small" data-act="addBulk">+ Add bulk-list line</button>
+        <label style="margin-top:10px">Bulk Pricing Note (English, optional)</label>
+        <textarea data-f="bulkPricing_en">${(n.bulkPricing||{}).en||''}</textarea>`;
+      list.appendChild(block);
+
+      block.querySelector('[data-act=delete]').addEventListener('click', () => {
+        if (confirm('Delete this notice?')) { DATA.notices.splice(ni,1); renderNotices(); }
+      });
+      block.querySelector('[data-f=title_en]').addEventListener('input', e => n.title.en = e.target.value);
+      block.querySelector('[data-f=html_en]').addEventListener('input', e => n.html.en = e.target.value);
+      const bpEl = block.querySelector('[data-f=bulkPricing_en]');
+      bpEl.addEventListener('input', e => { n.bulkPricing = n.bulkPricing || {}; n.bulkPricing.en = e.target.value; });
+
+      const bulkHolder = block.querySelector('.bulk-holder');
+      function renderBulk(){
+        bulkHolder.innerHTML = '';
+        (n.bulkList||[]).forEach((b, bi) => {
+          const row = document.createElement('div');
+          row.className = 'bulk-item';
+          row.innerHTML = `<input type="text" placeholder="English" value="${(b.en||'').replace(/"/g,'&quot;')}">
+            <button class="icon-btn">✕</button>`;
+          bulkHolder.appendChild(row);
+          row.querySelector('input').addEventListener('input', e => { b.en = e.target.value; });
+          row.querySelector('button').addEventListener('click', () => { n.bulkList.splice(bi,1); renderBulk(); });
+        });
+      }
+      renderBulk();
+      block.querySelector('[data-act=addBulk]').addEventListener('click', () => {
+        n.bulkList = n.bulkList || [];
+        n.bulkList.push({ en:'', hi:'', gu:'' });
+        renderBulk();
+      });
+    });
+  }
+
+  document.getElementById('addNoticeBtn').addEventListener('click', () => {
+    DATA.notices.push({ title:{en:'New Notice',hi:'',gu:''}, html:{en:'',hi:'',gu:''}, bulkList:[] });
+    renderNotices();
+  });
+
+  // ---------- Save / Reset / Export ----------
+  function save(){
+    readBrandForm();
+    localStorage.setItem(STORAGE_DATA, JSON.stringify(DATA));
+    // trigger a manual storage-like refresh signal for same-tab preview via BroadcastChannel
+    try { new BroadcastChannel('ndd-data').postMessage('updated'); } catch(e){}
+    showStatus('Saved — live site updated', true);
+  }
+
+  document.getElementById('saveBtn').addEventListener('click', save);
+
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    if (!confirm('Reset all changes back to the original menu-data.js defaults? This clears your saved edits.')) return;
+    localStorage.removeItem(STORAGE_DATA);
+    DATA = JSON.parse(JSON.stringify(window.NDD_DATA));
+    fillBrandForm(); renderCategories(); renderNotices();
+    showStatus('Reset to defaults', true);
+  });
+
+  document.getElementById('viewSiteBtn').addEventListener('click', () => {
+    window.open('index.html', '_blank');
+  });
+
+  function toFileText(data){
+    return '/*\n  New Delhi Darbar — shared menu data.\n  This file is the single source of truth for index.html and admin.html.\n  Edit it via admin.html (Admin Panel) — changes there update this object\n  and both pages reflect it automatically.\n*/\nwindow.NDD_DATA = ' + JSON.stringify(data, null, 2) + ';\n';
+  }
+
+  function download(filename, text){
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  document.getElementById('downloadBtn').addEventListener('click', () => {
+    readBrandForm();
+    download('menu-data.js', toFileText(DATA));
+  });
+  document.getElementById('downloadJsonBtn').addEventListener('click', () => {
+    readBrandForm();
+    download('menu-data-backup.json', JSON.stringify(DATA, null, 2));
+  });
+  document.getElementById('importFile').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        DATA = JSON.parse(reader.result);
+        fillBrandForm(); renderCategories(); renderNotices();
+        showStatus('Imported — click Save & Publish to apply', true);
+      } catch(err) {
+        alert('Invalid JSON file.');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  });
+
+  fillBrandForm();
+  renderCategories();
+  renderNotices();
+})();
+</script>
+</body>
+</html>

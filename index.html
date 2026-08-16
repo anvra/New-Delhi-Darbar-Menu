@@ -6,6 +6,8 @@
 <meta name="theme-color" content="#f5f2ed">
 <meta name="description" content="New Delhi Darbar Restaurant digital menu">
 <title>New Delhi Darbar — Menu</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="menu-data.js"></script>
 <style>
    :root{
     --bg:#f5f2ed;
@@ -393,7 +395,7 @@
 <header class="topbar">
   <div class="shell topbar-inner">
     <a class="brand" href="#" aria-label="New Delhi Darbar home">
-      <strong>New Delhi Darbar</strong><span>Restaurant</span>
+      <strong id="brandName">New Delhi Darbar</strong><span id="brandTagline">Restaurant</span>
     </a>
     <div class="actions">
       <div class="language-picker">
@@ -429,128 +431,111 @@
 <div class="shell">
   <section class="hero">
     <div class="eyebrow" data-i18n="restaurant">Restaurant</div>
-    <h1>New Delhi Darbar</h1>
+    <h1 id="brandH1">New Delhi Darbar</h1>
     <div class="hero-rule"></div>
     <div class="brand-strip" aria-label="Restaurant highlights">
-      <div class="brand-strip-inner">
-        <span class="tag-chip primary">Serving Since 2001</span>
-        <span class="tag-chip specialty">Chokha na Rotla &amp; Chokha na Pudaa Specialists</span>
-        <span class="tag-chip meta">Bulk Orders Welcome • Authentic Taste • Consistent Quality</span>
-      </div>
+      <div class="brand-strip-inner" id="brandStrip"></div>
     </div>
-    <div class="contact">
-      <a class="phone" href="tel:+917567587816">+91 75675 87816</a>
-      <a class="phone" href="tel:+919712052249">+91 97120 52249</a>
-    </div>
+    <div class="contact" id="heroContact"></div>
   </section>
 
-  <nav class="toolbar" aria-label="Menu categories">
-    <a class="cat-link" href="#chicken" data-cat="chicken">Chicken</a>
-    <a class="cat-link" href="#mutton" data-cat="mutton">Mutton</a>
-    <a class="cat-link" href="#fish" data-cat="fish">Fish</a>
-    <a class="cat-link" href="#rice" data-cat="rice">Rice</a>
-    <a class="cat-link" href="#roti" data-cat="roti">Roti</a>
-    <a class="cat-link" href="#beverages" data-cat="beverages">Cold Beverages</a>
-  </nav>
+  <nav class="toolbar" aria-label="Menu categories" id="catNav"></nav>
 
   <main>
-    <div style="text-align:center; margin:8px 0 16px; font-size:12.5px; font-weight:700; color:var(--accent); letter-spacing:0.02em;" data-i18n="stockNote">Note: Whatever is in the stock will be served.</div>
-    <div class="grid">
-      <section class="card" id="chicken">
-        <div class="card-head"><h2 data-i18n="chicken">Chicken Item</h2><span class="count">7</span></div>
-        <div class="items">
-          <div class="item"><div><div class="item-name" data-en="Chicken Masala" data-hi="चिकन मसाला" data-gu="ચિકન મસાલા">Chicken Masala</div></div><div class="price">80 Rs / plate</div></div>
-          <div class="item"><div><div class="item-name" data-en="Chicken Kadai" data-hi="चिकन कड़ाई" data-gu="ચિકન કડાઈ">Chicken Kadai</div></div><div class="price">80 Rs / plate</div></div>
-          <div class="item"><div><div class="item-name" data-en="Chicken Tikka(Fry)" data-hi="चिकन टिक्का (फ्राई)" data-gu="ચિકન ટિક્કા (ફ્રાય)">Chicken Tikka(Fry)</div></div><div class="price">80 Rs / plate</div></div>
-          <div class="item"><div><div class="item-name" data-en="Chicken Tikka(Gravy)" data-hi="चिकन टिक्का (ग्रेवी)" data-gu="ચિકન ટિક્કા (ग्रेवी)">Chicken Tikka(Gravy)</div></div><div class="price">90 Rs / plate</div></div>
-          <div class="item"><div><div class="item-name" data-en="Dry Chicken" data-hi="सूखी चिकन" data-gu="સૂકી ચિકન">Dry Chicken</div></div><div class="price">100 Rs / plate</div></div>
-          <div class="item"><div><div class="item-name" data-en="Hyderabadi Chicken" data-hi="हैदराबादी चिकन" data-gu="હૈદરાબાદી ચિકન">Hyderabadi Chicken</div></div><div class="price">100 Rs / plate</div></div>
-          <div class="item"><div><div class="item-name" data-en="Chicken Biryani" data-hi="चिकन बिरयानी" data-gu="ચિકન બિરયાની">Chicken Biryani</div></div><div class="price">90 Rs / plate</div></div>
-        </div>
-      </section>
-
-      <section class="card" id="mutton">
-        <div class="card-head"><h2 data-i18n="mutton">Mutton Item</h2><span class="count">5</span></div>
-        <div class="items">
-          <div class="item"><div><div class="item-name" data-en="Mutton Masala" data-hi="मटन मसाला" data-gu="મટન મસાલા">Mutton Masala</div></div><div class="price">130 Rs / plate</div></div>
-          <div class="item"><div><div class="item-name" data-en="Mutton Kadai" data-hi="मटन कड़ाई" data-gu="મટન કડાઈ">Mutton Kadai</div></div><div class="price">130 Rs / plate</div></div>
-          <div class="item"><div><div class="item-name" data-en="Kheema Masala" data-hi="कीमा मसाला" data-gu="ખીમા મસાલા">Kheema Masala</div></div><div class="price">100 Rs / plate</div></div>
-          <div class="item"><div><div class="item-name" data-en="Kebab (Gravy)" data-hi="कबाब (ग्रेवी)" data-gu="કબાબ (ગ્રેવી)">Kebab (Gravy)</div></div><div class="price">130 Rs / plate</div></div>
-          <div class="item"><div><div class="item-name" data-en="Kebab (Fry)" data-hi="कबाब (फ्राई)" data-gu="કબાબ (ફ્રાય)">Kebab (Fry)</div></div><div class="price">100 Rs / plate</div></div>
-        </div>
-      </section>
-
-      <section class="card" id="fish">
-        <div class="card-head"><h2 data-i18n="fish">Fish Item</h2><span class="count">3</span></div>
-        <div class="items">
-          <div class="item"><div><div class="item-name" data-en="Paplet Fry" data-hi="पापलेट फ्राई" data-gu="પેપલેટ ફ્રાય">Paplet Fry</div></div><div class="price">100 Rs / plate</div></div>
-          <div class="item"><div><div class="item-name" data-en="Jinga(Gravy)" data-hi="झींगा (ग्रेवी)" data-gu="જીંગા (ગ્રેવી)">Jinga(Gravy)</div></div><div class="price">100 Rs / plate</div></div>
-          <div class="item"><div><div class="item-name" data-en="Fish Fry" data-hi="मछली फ्राई" data-gu="મચ્છી ફ્રાય">Fish Fry</div></div><div class="price">100 Rs / plate</div></div>
-        </div>
-      </section>
-
-      <section class="card" id="rice">
-        <div class="card-head"><h2 data-i18n="rice">Rice</h2><span class="count">2</span></div>
-        <div class="items">
-          <div class="item"><div><div class="item-name" data-en="Biryani Rice" data-hi="बिरयानी चावल" data-gu="બિરયાની રાઇસ">Biryani Rice</div></div><div class="price">30 Rs / plate</div></div>
-          <div class="item"><div><div class="item-name" data-en="Plane Rice" data-hi="सादा चावल" data-gu="સાદા રાઇસ">Plane Rice</div></div><div class="price">30 Rs / plate</div></div>
-        </div>
-      </section>
-
-      <section class="card" id="roti">
-        <div class="card-head"><h2 data-i18n="roti">Roti</h2><span class="count">3</span></div>
-        <div class="items">
-          <div class="item"><div><div class="item-name" data-en="Plain Roti" data-hi="सादी रोटी" data-gu="ઘઉં ની રોટલી">Plain Roti</div></div><div class="price">5 Rs / pc</div></div>
-          <div class="item"><div><div class="item-name" data-en="Chokha na Rotla" data-hi="चावल के रोटला" data-gu="ચોખા ના રોટલા">Chokha na Rotla</div></div><div class="price">7 Rs / pc</div></div>
-          <div class="item"><div><div class="item-name" data-en="Chokha na Pudaa" data-hi="चावल के पुड़ा" data-gu="ચોખા ના પુડા">Chokha na Pudaa</div></div><div class="price">6 Rs / pc</div></div>
-        </div>
-      </section>
-
-      <section class="card" id="beverages">
-        <div class="card-head"><h2 data-i18n="beverages">Cold Beverages</h2><span class="count">3</span></div>
-        <div class="items">
-          <div class="item"><div><div class="item-name" data-en="Mineral Water" data-hi="मिनरल वाटर" data-gu="મિનરલ વોટર">Mineral Water</div></div><div class="price">10/20 Rs</div></div>
-          <div class="item"><div><div class="item-name" data-en="Jeera" data-hi="जीरा" data-gu="જીરા">Jeera</div></div><div class="price">10 Rs</div></div>
-          <div class="item"><div><div class="item-name" data-en="Soft Drinks" data-hi="सॉफ्ट ड्रिंक्स" data-gu="સોફ્ટ ડ્રિંક્સ">Soft Drinks</div></div><div class="price">20/40 Rs</div></div>
-        </div>
-      </section>
-
-      <aside class="notice" aria-label="Restaurant notes">
-        <section class="notice-section">
-          <h3 class="notice-label" data-i18n="orderNoteTitle">Fresh preparation</h3>
-          <p data-i18n-html="orderNote"><strong>Chicken, Mutton &amp; Fish</strong> are prepared fresh as per your order and preference. Quantities and preparation can be customized according to your requirements. Prices may vary based on the quality, quantity, and preparation of the food.</p>
-        </section>
-        <section class="notice-section">
-          <h3 class="notice-label" data-i18n="bulkTitle">Special Note</h3>
-          <p data-i18n-html="bulkIntro">We also accept <strong>bulk quantity orders</strong> for:</p>
-          <ul class="bulk-list">
-            <li data-en="Plain Roti" data-hi="सादी रोटी" data-gu="ઘઉં ની રોટલી">Plain Roti</li>
-            <li data-en="Chokha na Rotla" data-hi="चावल के रोटला" data-gu="ચોખા ના રોટલા">Chokha na Rotla</li>
-            <li data-en="Chokha na Pudaa" data-hi="चावल के पुड़ा" data-gu="ચોખા ના પુડા">Chokha na Pudaa</li>
-          </ul>
-          <p class="bulk-price" data-i18n-html="bulkPricing"><strong>Special bulk-order pricing:</strong> The price remains <strong>the same even for large quantities</strong>. Please place your order in advance for bulk quantities.</p>
-        </section>
-      </aside>
-    </div>
+    <div id="stockNote" style="text-align:center; margin:8px 0 16px; font-size:12.5px; font-weight:700; color:var(--accent); letter-spacing:0.02em;" data-i18n="stockNote">Note: Whatever is in the stock will be served.</div>
+    <div class="grid" id="menuGrid"></div>
   </main>
 
   <footer>
     <div class="footer-grid">
       <div class="address">
         <strong data-i18n="addressLabel">Address</strong>
-        <a href="https://maps.app.goo.gl/PcJ4x3PgARtX2wjEA" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:5px;border-bottom:1px solid transparent;transition:border-color .18s ease,color .18s ease"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:0 0 auto"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7Z"/><circle cx="12" cy="9" r="2.5"/></svg>Opp. Masjid, Nana Taiwad, Valsad. 396001</a>
+        <a id="addressLink" href="#" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:5px;border-bottom:1px solid transparent;transition:border-color .18s ease,color .18s ease"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:0 0 auto"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7Z"/><circle cx="12" cy="9" r="2.5"/></svg><span id="addressText">Address</span></a>
       </div>
-      <div class="contact">
-        <a class="phone" href="tel:+917567587816">+91 75675 87816</a>
-        <a class="phone" href="tel:+919712052249">+91 97120 52249</a>
-      </div>
+      <div class="contact" id="footerContact"></div>
     </div>
     <div class="source-note" data-i18n="sourceNote">Prices and menu wording are preserved from the supplied menu. No tax or service-charge information is stated in the source.</div>
+    <div class="source-note" style="margin-top:8px"><a href="admin.html" style="border-bottom:1px solid var(--line)">Admin Panel</a></div>
   </footer>
 </div>
 
 <script>
 (() => {
+  const STORAGE_DATA = 'ndd-data-override';
+  function loadData(){
+    try {
+      const raw = localStorage.getItem(STORAGE_DATA);
+      if (raw) return JSON.parse(raw);
+    } catch (e) { /* fall through to default */ }
+    return window.NDD_DATA;
+  }
+  const DATA = loadData();
+
+  function escAttr(s){
+    return String(s == null ? '' : s).replace(/"/g,'&quot;');
+  }
+
+  function renderBrand(){
+    document.getElementById('brandName').textContent = DATA.brand.name;
+    document.getElementById('brandTagline').textContent = DATA.brand.tagline;
+    document.getElementById('brandH1').textContent = DATA.brand.name;
+    const strip = document.getElementById('brandStrip');
+    strip.innerHTML = `
+      <span class="tag-chip primary">${DATA.brand.since}</span>
+      <span class="tag-chip specialty">${DATA.brand.specialty}</span>
+      <span class="tag-chip meta">${DATA.brand.meta}</span>`;
+    const contactHtml = DATA.brand.phones.map(p =>
+      `<a class="phone" href="tel:${p.replace(/[^\d+]/g,'')}">${p}</a>`).join('');
+    document.getElementById('heroContact').innerHTML = contactHtml;
+    document.getElementById('footerContact').innerHTML = contactHtml;
+    document.getElementById('addressLink').href = DATA.brand.mapUrl || '#';
+    document.getElementById('addressText').textContent = DATA.brand.address;
+  }
+
+  function renderNav(){
+    const nav = document.getElementById('catNav');
+    nav.innerHTML = DATA.categories.map(c =>
+      `<a class="cat-link" href="#${c.id}" data-cat="${c.id}"></a>`).join('');
+  }
+
+  function renderMenu(){
+    const grid = document.getElementById('menuGrid');
+    const sections = DATA.categories.map(cat => {
+      const items = cat.items.map(it => `
+        <div class="item">
+          <div><div class="item-name" data-en="${escAttr(it.en)}" data-hi="${escAttr(it.hi)}" data-gu="${escAttr(it.gu)}">${it.en}</div></div>
+          <div class="price">${it.price}</div>
+        </div>`).join('');
+      return `
+        <section class="card" id="${cat.id}">
+          <div class="card-head"><h2 data-cat-name="${cat.id}"></h2><span class="count">${cat.items.length}</span></div>
+          <div class="items">${items}</div>
+        </section>`;
+    }).join('');
+
+    const notices = DATA.notices.map(n => {
+      const bulk = n.bulkList ? `<ul class="bulk-list">${n.bulkList.map(b =>
+        `<li data-en="${escAttr(b.en)}" data-hi="${escAttr(b.hi)}" data-gu="${escAttr(b.gu)}">${b.en}</li>`).join('')}</ul>` : '';
+      const bulkPricing = n.bulkPricing ? `<p class="bulk-price" data-notice-pricing></p>` : '';
+      return `
+        <section class="notice-section">
+          <h3 class="notice-label" data-notice-title></h3>
+          <p data-notice-html></p>
+          ${bulk}
+          ${bulkPricing}
+        </section>`;
+    }).join('');
+
+    grid.innerHTML = sections + `<aside class="notice" aria-label="Restaurant notes">${notices}</aside>`;
+
+    // Wire notice translations by index since they have no stable ids
+    const noticeSections = grid.querySelectorAll('.notice-section');
+    noticeSections.forEach((el, i) => {
+      const n = DATA.notices[i];
+      el._notice = n;
+    });
+  }
+
   const root = document.documentElement;
   const themeButton = document.getElementById('themeButton');
   const themeIcon = document.getElementById('themeIcon');
@@ -565,39 +550,16 @@
   const translations = {
     en:{
       restaurant:'Restaurant', chicken:'Chicken Item', mutton:'Mutton Item', fish:'Fish Item',
-      rice:'Rice', roti:'Roti', beverages:'Cold Beverages', notListed:'Price not shown in source',
-      orderNoteTitle:'Fresh preparation',
-      orderNote:'<strong>Chicken, Mutton &amp; Fish</strong> are prepared fresh as per your order and preference. Quantities and preparation can be customized according to your requirements. Prices may vary based on the quality, quantity, and preparation of the food.',
-      bulkTitle:'Special Note',
-      bulkIntro:'We also accept <strong>bulk quantity orders</strong> for:',
-      bulkPricing:'<strong>Special bulk-order pricing:</strong> The price remains <strong>the same even for large quantities</strong>. Please place your order in advance for bulk quantities.',
-      stockNote:'Note: Whatever is in the stock will be served.',
-      addressLabel:'Address',
-      sourceNote:'Prices and menu wording are preserved from the supplied menu. No tax or service-charge information is stated in the source.'
+      notListed:'Price not shown in source',
+      addressLabel:'Address'
     },
     hi:{
-      restaurant:'रेस्तरां', chicken:'चिकन आइटम', mutton:'मटन आइटम', fish:'फिश आइटम',
-      rice:'चावल', roti:'रोटी', beverages:'कोल्ड बेवरेजेज', notListed:'स्रोत में कीमत नहीं दी गई है',
-      orderNoteTitle:'ताज़ा तैयारी',
-      orderNote:'<strong>चिकन, मटन और मछली</strong> आपके ऑर्डर और पसंद के अनुसार ताज़ा तैयार किए जाते हैं। मात्रा और तैयारी आपकी आवश्यकता के अनुसार बदली जा सकती है। भोजन की गुणवत्ता, मात्रा और तैयारी के अनुसार कीमत अलग हो सकती है।',
-      bulkTitle:'विशेष सूचना',
-      bulkIntro:'हम <strong>बड़ी मात्रा के ऑर्डर</strong> भी स्वीकार करते हैं:',
-      bulkPricing:'<strong>विशेष बल्क-ऑर्डर मूल्य:</strong> बड़ी मात्रा में भी <strong>कीमत समान रहती है</strong>। बड़ी मात्रा के लिए कृपया पहले से ऑर्डर करें।',
-      stockNote:'नोट: स्टॉक में जो उपलब्ध होगा, वही परोसा जाएगा।',
-      addressLabel:'पता',
-      sourceNote:'कीमतें और मेनू की मूल जानकारी दिए गए मेनू के अनुसार रखी गई हैं। स्रोत में टैक्स या सर्विस चार्ज की जानकारी नहीं दी गई है।'
+      restaurant:'रेस्तरां', notListed:'स्रोत में कीमत नहीं दी गई है',
+      addressLabel:'पता'
     },
     gu:{
-      restaurant:'રેસ્ટોરન્ટ', chicken:'ચિકન આઇટમ', mutton:'મટન આઇટમ', fish:'ફિશ આઈટમ',
-      rice:'રાઇસ', roti:'રોટી', beverages:'કોલ્ડ બેવરેજિસ', notListed:'સ્રોતમાં કિંમત દર્શાવેલી નથી',
-      orderNoteTitle:'તાજી તૈયારી',
-      orderNote:'<strong>ચિકન, મટન અને ફિશ</strong> તમારા ઓર્ડર અને પસંદગી મુજબ તાજા તૈયાર કરવામાં આવે છે. માત્રા અને તૈયારી તમારી જરૂરિયાત મુજબ કસ્ટમાઇઝ કરી શકાય છે. ખોરાકની ગુણવત્તા, માત્રા અને તૈયારી મુજબ કિંમત અલગ હોઈ શકે છે.',
-      bulkTitle:'ખાસ નોંધ',
-      bulkIntro:'અમે <strong>મોટી માત્રાના ઓર્ડર</strong> પણ સ્વીકારીએ છીએ:',
-      bulkPricing:'<strong>ખાસ બલ્ક-ઓર્ડર કિંમત:</strong> મોટી માત્રા માટે પણ <strong>કિંમત સમાન રહેશે</strong>. મોટી માત્રા માટે કૃપા કરીને અગાઉથી ઓર્ડર આપો.',
-      stockNote:'નોંધ: સ્ટોકમાં જે ઉપલબ્ધ હશે તે જ પીરસવામાં આવશે.',
-      addressLabel:'સરનામું',
-      sourceNote:'કિંમતો અને મેનૂની મૂળ માહિતી આપેલા મેનૂ મુજબ જ રાખવામાં આવી છે. સ્રોતમાં ટેક્સ અથવા સર્વિસ ચાર્જની માહિતી દર્શાવેલી નથી.'
+      restaurant:'રેસ્ટોરન્ટ', notListed:'સ્રોતમાં કિંમત દર્શાવેલી નથી',
+      addressLabel:'સરનામું'
     }
   };
 
@@ -630,10 +592,28 @@
     document.querySelectorAll('[data-en]').forEach(el => {
       el.textContent = el.dataset[lang] || el.dataset.en;
     });
-    document.querySelectorAll('.cat-link').forEach(el => {
-      const key = el.dataset.cat;
-      el.textContent = t[key];
+    document.querySelectorAll('.cat-link[data-cat]').forEach(el => {
+      const cat = DATA.categories.find(c => c.id === el.dataset.cat);
+      if (cat) el.textContent = cat.name[lang] || cat.name.en;
     });
+    document.querySelectorAll('[data-cat-name]').forEach(el => {
+      const cat = DATA.categories.find(c => c.id === el.dataset.catName);
+      if (cat) el.textContent = cat.name[lang] || cat.name.en;
+    });
+    document.querySelectorAll('.notice-section').forEach(el => {
+      const n = el._notice;
+      if (!n) return;
+      const titleEl = el.querySelector('[data-notice-title]');
+      if (titleEl) titleEl.textContent = n.title[lang] || n.title.en;
+      const htmlEl = el.querySelector('[data-notice-html]');
+      if (htmlEl) htmlEl.innerHTML = n.html[lang] || n.html.en;
+      const pricingEl = el.querySelector('[data-notice-pricing]');
+      if (pricingEl && n.bulkPricing) pricingEl.innerHTML = n.bulkPricing[lang] || n.bulkPricing.en;
+    });
+    const stockEl = document.getElementById('stockNote');
+    if (stockEl && DATA.brand.stockNote) stockEl.textContent = DATA.brand.stockNote[lang] || DATA.brand.stockNote.en;
+    const sourceEl = document.querySelector('.source-note[data-i18n="sourceNote"]');
+    if (sourceEl && DATA.brand.sourceNote) sourceEl.textContent = DATA.brand.sourceNote[lang] || DATA.brand.sourceNote.en;
     document.querySelectorAll('[data-lang]').forEach(el => {
       el.setAttribute('aria-checked', String(el.dataset.lang === lang));
     });
@@ -641,6 +621,10 @@
     document.documentElement.lang = lang;
     localStorage.setItem(STORAGE_LANG, lang);
   }
+
+  renderBrand();
+  renderNav();
+  renderMenu();
 
   const savedTheme = localStorage.getItem(STORAGE_THEME);
   const initialTheme = savedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
@@ -783,7 +767,11 @@
   }, {rootMargin:'-120px 0px -40% 0px', threshold:[0, 0.1, 0.25]});
 
   categoryCards.forEach(card => categoryObserver.observe(card));
-  setActiveCategory(categoryCards[0]?.id || 'chicken');
+  setActiveCategory(categoryCards[0]?.id || (DATA.categories[0] && DATA.categories[0].id));
+
+  window.addEventListener('storage', e => {
+    if (e.key === STORAGE_DATA) location.reload();
+  });
 
 })();
 </script>
