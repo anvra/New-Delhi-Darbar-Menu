@@ -25,24 +25,66 @@
 
   /* ---------------- credentials ---------------- */
 
+  /*
+    localStorage is unavailable in some contexts — notably pages opened straight
+    from disk (file://) in Chrome, and private-browsing modes. Reading or writing
+    it there THROWS, so every access is guarded and we fall back to an in-memory
+    token that lasts for the current tab. Publishing still works; the admin just
+    has to paste the token again next time.
+  */
+  let memoryToken = '';
+  let storageWorks = null; // null = not yet probed
+
+  function canUseStorage() {
+    if (storageWorks !== null) return storageWorks;
+    try {
+      const probe = '__ndd_probe__';
+      localStorage.setItem(probe, '1');
+      localStorage.removeItem(probe);
+      storageWorks = true;
+    } catch (e) {
+      storageWorks = false;
+    }
+    return storageWorks;
+  }
+
   function getToken() {
-    try { return localStorage.getItem(STORAGE_TOKEN) || ''; } catch (e) { return ''; }
+    if (canUseStorage()) {
+      try { return localStorage.getItem(STORAGE_TOKEN) || memoryToken; } catch (e) { /* fall through */ }
+    }
+    return memoryToken;
   }
+
   function setToken(token) {
-    if (token) localStorage.setItem(STORAGE_TOKEN, token.trim());
-    else localStorage.removeItem(STORAGE_TOKEN);
+    const value = token ? String(token).trim() : '';
+    memoryToken = value;
+    if (!canUseStorage()) return;
+    try {
+      if (value) localStorage.setItem(STORAGE_TOKEN, value);
+      else localStorage.removeItem(STORAGE_TOKEN);
+    } catch (e) {
+      // Keeping the in-memory copy is enough for this session.
+    }
   }
+
   function hasToken() { return !!getToken(); }
 
+  /* True when the token can only be kept for this tab, so the UI can say so. */
+  function isSessionOnly() { return !canUseStorage(); }
+
   function getRepo() {
-    try {
-      const raw = localStorage.getItem(STORAGE_REPO);
-      if (raw) return Object.assign({}, DEFAULT_REPO, JSON.parse(raw));
-    } catch (e) { /* use defaults */ }
+    if (canUseStorage()) {
+      try {
+        const raw = localStorage.getItem(STORAGE_REPO);
+        if (raw) return Object.assign({}, DEFAULT_REPO, JSON.parse(raw));
+      } catch (e) { /* use defaults */ }
+    }
     return Object.assign({}, DEFAULT_REPO);
   }
+
   function setRepo(cfg) {
-    localStorage.setItem(STORAGE_REPO, JSON.stringify(cfg));
+    if (!canUseStorage()) return;
+    try { localStorage.setItem(STORAGE_REPO, JSON.stringify(cfg)); } catch (e) { /* ignore */ }
   }
 
   /* ---------------- low-level API ---------------- */
@@ -51,14 +93,21 @@
     const token = getToken();
     if (!token) throw new Error('No GitHub token saved. Add one in the Publish tab.');
 
-    const res = await fetch(API + pathname, Object.assign({}, options, {
-      headers: Object.assign({
-        'Authorization': 'Bearer ' + token,
-        'Accept': 'application/vnd.github+json',
-        'X-GitHub-Api-Version': '2022-11-28',
-        'Content-Type': 'application/json'
-      }, (options || {}).headers)
-    }));
+    let res;
+    try {
+      res = await fetch(API + pathname, Object.assign({}, options, {
+        headers: Object.assign({
+          'Authorization': 'Bearer ' + token,
+          'Accept': 'application/vnd.github+json',
+          'X-GitHub-Api-Version': '2022-11-28',
+          'Content-Type': 'application/json'
+        }, (options || {}).headers)
+      }));
+    } catch (err) {
+      // fetch() only rejects on network-level failures, never on HTTP errors.
+      throw new Error('Could not reach GitHub. Check your internet connection, '
+        + 'then try again. (' + (err && err.message ? err.message : 'network error') + ')');
+    }
 
     if (!res.ok) {
       let detail = '';
@@ -180,7 +229,7 @@
 
   root.NDDGitHub = {
     STORAGE_TOKEN, DEFAULT_REPO,
-    getToken, setToken, hasToken, getRepo, setRepo,
+    getToken, setToken, hasToken, isSessionOnly, getRepo, setRepo,
     verify, publishFiles, readFile, recentCommits,
     toBase64, fromBase64
   };

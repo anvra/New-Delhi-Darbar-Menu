@@ -692,21 +692,34 @@
   }
 
   async function connectGitHub() {
-    const token = $('ghToken').value.trim();
+    const btn = $('ghConnectBtn');
     const msg = $('ghConnectMsg');
+    const token = $('ghToken').value.trim();
+
+    // Every path below must end with a visible message — a silent failure here
+    // looks like the button is broken.
     if (!token) {
-      msg.textContent = 'Paste your token first.';
+      msg.textContent = 'Paste your token into the box first.';
       return;
     }
-    msg.textContent = 'Checking…';
-    GitHub.setToken(token);
+    if (!/^(github_pat_|ghp_|gho_|ghs_)/.test(token)) {
+      msg.textContent = 'That does not look like a GitHub token — it should start with "github_pat_" or "ghp_".';
+      return;
+    }
+
+    btn.disabled = true;
+    msg.textContent = 'Checking your token…';
+
     try {
+      GitHub.setToken(token);
       const info = await GitHub.verify();
+
       if (!info.canWrite) {
         GitHub.setToken('');
-        msg.textContent = 'That token cannot edit this repository. Give it "Contents: Read and write".';
+        msg.textContent = 'That token cannot edit this repository. Re-create it with "Contents: Read and write".';
         return;
       }
+
       $('ghToken').value = '';
       msg.textContent = '';
       showGitHubState(true, info);
@@ -714,7 +727,10 @@
       showStatus('Connected to GitHub', 'ok');
     } catch (err) {
       GitHub.setToken('');
-      msg.textContent = err.message;
+      msg.textContent = (err && err.message) || 'Could not connect. Please try again.';
+      console.error('GitHub connect failed:', err);
+    } finally {
+      btn.disabled = false;
     }
   }
 
@@ -765,6 +781,27 @@
   }
 
   if ($('ghConnectBtn')) {
+    // Warn about the two environments where publishing behaves differently.
+    const envWarn = $('ghEnvWarning');
+    if (envWarn) {
+      if (location.protocol === 'file:') {
+        envWarn.innerHTML = '<div class="result-box err">'
+          + '<strong>Open this page through a web address, not from a folder</strong>'
+          + '<div>The address bar starts with <code>file://</code>. Browsers block saved logins '
+          + 'and some network requests on local files, so publishing may not work.</div>'
+          + '<div style="margin-top:6px">Use the online admin panel instead: '
+          + '<a href="https://anvra.github.io/New-Delhi-Darbar-Menu/admin.html" target="_blank" rel="noopener">'
+          + 'anvra.github.io/New-Delhi-Darbar-Menu/admin.html ↗</a>'
+          + '<br>Or, if you are testing locally, run <code>npm start</code> and open '
+          + '<code>http://localhost:8080/admin.html</code>.</div></div>';
+      } else if (GitHub.isSessionOnly && GitHub.isSessionOnly()) {
+        envWarn.innerHTML = '<div class="result-box err">'
+          + '<strong>This browser cannot remember your token</strong>'
+          + '<div>Private/incognito mode is likely on. You can still publish, but you will need to '
+          + 'paste the token again next time.</div></div>';
+      }
+    }
+
     $('ghConnectBtn').addEventListener('click', connectGitHub);
     $('ghToken').addEventListener('keydown', e => {
       if (e.key === 'Enter') { e.preventDefault(); connectGitHub(); }

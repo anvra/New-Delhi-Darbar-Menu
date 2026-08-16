@@ -82,6 +82,13 @@ Git commands are needed. Connect once:
    **Read and write**.
 4. Paste the token into the Publish tab and press **Connect**.
 
+> **Don't open `admin.html` by double-clicking it.** A page opened from a folder
+> has a `file://` address, where browsers block saved logins and some network
+> requests — the Connect button cannot work. Use the
+> [online admin panel](https://anvra.github.io/New-Delhi-Darbar-Menu/admin.html),
+> or run `npm start` and open <http://localhost:8080/admin.html>. The panel
+> detects this and shows a warning with both options.
+
 The token is stored only in that browser's `localStorage` and is sent only to
 `api.github.com`. It is never committed. Anyone with access to that browser
 profile can publish, so connect on a personal device. Press **Disconnect** to

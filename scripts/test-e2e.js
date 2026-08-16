@@ -560,6 +560,113 @@ async function loadPage(file, storageSeed) {
 
     GH.setToken('');
     check('clearing the token disconnects', !GH.hasToken());
+
+    // A network-level failure must be explained, not surfaced as "Failed to fetch".
+    GH.setToken('github_pat_x');
+    w.fetch = async () => { throw new TypeError('Failed to fetch'); };
+    try { await GH.verify(); } catch (e) { msg = e.message; }
+    check('network failure is explained plainly', /internet connection/i.test(msg), msg);
+    GH.setToken('');
+  }
+
+  /* ---------------- 9b. Connect button always reports back ---------------- */
+  {
+    // Regression: on file:// and in private mode, localStorage.setItem THROWS.
+    // That aborted connectGitHub() before any message rendered, so the button
+    // appeared to do nothing at all.
+    const admin5 = await loadPage('admin.html');
+    const w = admin5.window;
+    const d = w.document;
+
+    const hostile = {
+      getItem() { throw new Error('localStorage disabled'); },
+      setItem() { throw new Error('localStorage disabled'); },
+      removeItem() { throw new Error('localStorage disabled'); }
+    };
+    Object.defineProperty(w, 'localStorage', { value: hostile, configurable: true });
+
+    // Re-evaluate the module so it probes the hostile storage.
+    w.eval(fs.readFileSync(path.join(ROOT, 'src/core/github.js'), 'utf8'));
+    const GH = w.NDDGitHub;
+
+    let threw = false;
+    try { GH.setToken('github_pat_abc'); } catch (e) { threw = true; }
+    check('setToken survives unusable localStorage', !threw);
+    eq('token still readable from memory', GH.getToken(), 'github_pat_abc');
+    check('reports that storage is session-only', GH.isSessionOnly() === true);
+    check('hasToken works without storage', GH.hasToken());
+    GH.setToken('');
+    check('clearing works without storage', !GH.hasToken());
+
+    // The button must always leave a message behind.
+    const msgEl = d.getElementById('ghConnectMsg');
+    const tokenEl = d.getElementById('ghToken');
+    const connectBtn = d.getElementById('ghConnectBtn');
+
+    tokenEl.value = '';
+    connectBtn.click();
+    await new Promise(r => setTimeout(r, 20));
+    check('empty token gives a message', msgEl.textContent.length > 0, msgEl.textContent);
+
+    tokenEl.value = 'not-a-real-token';
+    connectBtn.click();
+    await new Promise(r => setTimeout(r, 20));
+    check('malformed token is rejected with advice',
+      /github_pat_/.test(msgEl.textContent), msgEl.textContent);
+
+    // A rejected token must also report, and must re-enable the button.
+    w.fetch = async () => ({ ok: false, status: 401, json: async () => ({ message: 'Bad credentials' }) });
+    tokenEl.value = 'github_pat_looksvalid';
+    connectBtn.click();
+    await new Promise(r => setTimeout(r, 40));
+    check('rejected token shows an explanation', /token/i.test(msgEl.textContent), msgEl.textContent);
+    check('connect button is re-enabled after failure', !connectBtn.disabled);
+  }
+
+  /* ---------------- 9c. file:// is called out in the UI ---------------- */
+  {
+    const dom = new JSDOM(fs.readFileSync(path.join(ROOT, 'admin.html'), 'utf8'), {
+      runScripts: 'outside-only', url: 'file:///C:/menu/admin.html', pretendToBeVisual: true
+    });
+    const w = dom.window;
+    const map = new Map();
+    Object.defineProperty(w, 'localStorage', {
+      value: {
+        getItem: k => (map.has(k) ? map.get(k) : null),
+        setItem: (k, v) => map.set(k, String(v)),
+        removeItem: k => map.delete(k)
+      }, configurable: true
+    });
+    w.matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {} });
+    w.scrollTo = () => {}; w.confirm = () => true;
+    w.IntersectionObserver = class { observe() {} disconnect() {} unobserve() {} };
+    w.URL.createObjectURL = () => 'blob:x'; w.URL.revokeObjectURL = () => {};
+    const papaSrc = fs.readFileSync(require.resolve('papaparse'), 'utf8');
+    w.eval(papaSrc.replace(/module\.exports/g, 'window.__papa_export'));
+    w.Papa = w.__papa_export || w.Papa;
+    // Simulate a browser blocking fetch on file://, while leaving normal
+    // string parsing (used by the embedded fallback) working.
+    const realParse = w.Papa.parse.bind(w.Papa);
+    w.Papa.parse = (input, cfg) => {
+      if (cfg && cfg.download) { cfg.error && cfg.error(new Error('blocked on file://')); return; }
+      return realParse(input, cfg);
+    };
+    [...w.document.querySelectorAll('script[src]')]
+      .map(s => s.getAttribute('src')).filter(s => !/^https?:/.test(s))
+      .forEach(src => w.eval(fs.readFileSync(path.join(ROOT, src), 'utf8')));
+    await new Promise(r => setTimeout(r, 60));
+
+    const warning = w.document.getElementById('ghEnvWarning').textContent;
+    check('file:// shows a warning', warning.length > 0);
+    check('warning names the problem', /file:\/\//.test(warning), warning.slice(0, 90));
+    check('warning links to the online admin panel',
+      !!w.document.querySelector('#ghEnvWarning a[href*="github.io"]'));
+    check('warning mentions the local server option',
+      /localhost:8080/.test(warning), warning.slice(0, 200));
+    // The menu itself must still load from the embedded fallback on file://.
+    check('menu still loads on file:// via the fallback',
+      w.document.querySelectorAll('.cat-card').length === 6,
+      `${w.document.querySelectorAll('.cat-card').length} categories`);
   }
 
   /* ---------------- 10. Backup & restore ---------------- */
