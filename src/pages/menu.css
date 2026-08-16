@@ -146,7 +146,8 @@
   .hero-rule{width:54px;height:1px;background:var(--accent);margin:18px auto}
   .contact{display:flex;justify-content:center;flex-wrap:wrap;gap:8px 18px;font-size:13px;color:var(--muted)}
   .contact a{padding:3px 0;border-bottom:1px solid transparent}
-  .contact a.phone{font-weight:800;font-style:italic}
+  .contact a.phone{font-weight:800;font-style:italic;display:inline-flex;align-items:center;gap:5px;}
+  .contact a.phone svg{flex:0 0 auto;font-style:normal;margin-bottom:1px;}
   .contact a:hover{border-color:var(--accent);color:var(--text)}
   .toolbar{
     position:sticky;

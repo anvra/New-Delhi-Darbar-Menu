@@ -1,13 +1,12 @@
-# New Delhi Darbar — Digital Menu
+# Restaurant Digital Menu
 
 Trilingual (English / हिन्दी / ગુજરાતી) digital menu with a built-in admin panel.
 Static site, no backend, hosted on GitHub Pages.
 
-**Live site:** <https://anvra.github.io/New-Delhi-Darbar-Menu/>
+**Live site:** <https://your-username.github.io/Your-Repo-Name/>
 
 The live site serves the **customer menu only**. The admin panel is deliberately
-not published — it is run locally from a checkout of this repository. See
-[SECURITY.md](SECURITY.md) (local file, not published — see below).
+not published — it is run locally from a checkout of this repository.
 
 ---
 
@@ -89,7 +88,7 @@ Copy the credentials template and set your own login:
 cp src/core/admin-credentials.sample.js src/core/admin-credentials.js
 
 # Generate a hash for your phone number + password
-node -e "console.log(require('crypto').createHash('sha256').update('ndd-admin-v1:PHONE:PASSWORD').digest('hex'))"
+node -e "console.log(require('crypto').createHash('sha256').update('your-admin-v1:PHONE:PASSWORD').digest('hex'))"
 ```
 
 Paste the phone number and hash into `admin-credentials.js`. That file is
@@ -178,10 +177,7 @@ persistence, CSV round-tripping, the login gate, the session-only token
 handling, and the preview renderer. It then audits the public build to confirm
 no admin code, credential or secret can reach the published site.
 
-`SECURITY.md` documents the full security posture but is kept out of the
-public repository (git-ignored) since it's written for this specific
-deployment's threat model.
-
 Serve the site over HTTP rather than opening the files directly — browsers block
 `fetch` on `file://` URLs. The pages do fall back to the embedded menu copy in
 that case, but HTTP is the accurate way to test.
+
