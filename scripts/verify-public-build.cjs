@@ -39,7 +39,10 @@ const FORBIDDEN_FILES = [
   'admin.html',
   'src/pages/admin.js',
   'src/pages/admin.css',
-  'src/core/auth-client.js',
+  'src/core/admin-auth.js',
+  'src/core/github-publish.js',
+  'src/core/admin-credentials.js',
+  'src/core/admin-credentials.sample.js',
   'package.json',
   'package-lock.json',
   'README.md',
@@ -49,29 +52,23 @@ const FORBIDDEN_FILES = [
 const FORBIDDEN_DIRS = ['scripts', '.github', 'worker', 'node_modules', '.git'];
 
 /*
-  Substrings that would indicate a secret or an admin-only capability leaked.
-
-  Authentication/authorization now live entirely in the Cloudflare Worker
-  (worker/), which is not part of this repo's public build and holds no
-  secret in any file this script can see — so there is nothing worker-side
-  to check for here. This list instead guards the browser-visible surface:
-  no GitHub API call, no session-cookie machinery, and no legacy artifact
-  from the removed password/PAT-based flows should ever reappear.
+  Substrings that would indicate a secret or an admin-only capability leaked
+  into the public build. There is no backend in this architecture: the
+  phone/password check and the GitHub-publish logic both run in admin.js/
+  admin-auth.js/github-publish.js, which are themselves forbidden files above
+  — but this list is a second, content-based line of defense in case any of
+  that logic or its identifiers ever got copy-pasted into a file that IS
+  allow-listed for publishing.
 */
 const FORBIDDEN_STRINGS = [
   { pattern: /github_pat_[A-Za-z0-9_]{20,}/, label: 'a GitHub fine-grained token' },
   { pattern: /ghp_[A-Za-z0-9]{20,}/, label: 'a GitHub classic token' },
   { pattern: /BEGIN [A-Z ]*PRIVATE KEY/, label: 'a private key' },
-  { pattern: /NDDAuthClient/, label: 'the admin auth client module' },
-  { pattern: /api\.github\.com/, label: 'a direct GitHub API call' },
-  { pattern: /ndd_session/, label: 'the admin session cookie name' },
-  { pattern: /ndd_oauth_state/, label: 'the OAuth CSRF-state cookie name' },
-  // Legacy artifacts from removed flows — must never resurface.
-  { pattern: /NDD_CREDENTIALS/, label: 'the removed local-credentials hook' },
-  { pattern: /NDDAuth\b/, label: 'the removed client-side auth module' },
-  { pattern: /NDDGitHub/, label: 'the removed browser GitHub-publish module' },
-  { pattern: /ndd-github-token/, label: 'the removed PAT storage key' },
-  { pattern: /ndd-admin-session/, label: 'the removed local-session storage key' }
+  { pattern: /NDDAdminAuth/, label: 'the admin login module' },
+  { pattern: /NDDGitHubPublish/, label: 'the GitHub publish module' },
+  { pattern: /NDD_CREDENTIALS/, label: 'the admin credentials hook' },
+  { pattern: /ndd-admin-session/, label: 'the admin session storage key' },
+  { pattern: /api\.github\.com/, label: 'a direct GitHub API call' }
 ];
 
 let failures = [];

@@ -7,7 +7,7 @@ Static site, no backend, hosted on GitHub Pages.
 
 The live site serves the **customer menu only**. The admin panel is deliberately
 not published — it is run locally from a checkout of this repository. See
-[SECURITY.md](SECURITY.md).
+[SECURITY.md](SECURITY.md) (local file, not published — see below).
 
 ---
 
@@ -39,12 +39,15 @@ preparations, portions and menu sections. To teach it a new word, add it to
 
 ```text
 index.html                  Customer-facing menu
-admin.html                  Admin panel
+admin.html                  Admin panel                       (not published)
 
 src/core/                   Shared logic (used by both pages)
   glossary.js                 English -> Hindi/Gujarati translation engine
-  store.js                    Load / save / publish data; CSV <-> objects
-  auth-client.js              Talks to the admin-auth Worker            (not published)
+  store.js                    Load / save / build data; CSV <-> objects
+  admin-auth.js                Local phone+password login gate  (not published)
+  admin-credentials.js          Your login hash — git-ignored   (not published)
+  admin-credentials.sample.js   Template for the file above     (not published)
+  github-publish.js            Session-only GitHub PAT publish  (not published)
   i18n.js                     Static UI labels
   config.js                   Brand details + notices          (editable data)
   menu-fallback.js            Embedded copy of menu.csv        (generated)
@@ -58,16 +61,12 @@ assets/
   img/                        Logos, favicons, QR code
 
 scripts/
-  test-e2e.cjs                     End-to-end test suite
-  verify-public-build.cjs          Builds + audits the public site
-  test-worker-if-present.cjs       Runs worker tests if worker/ exists locally
-  generate_qr.py                   Regenerate the table QR code
+  test-e2e.cjs                End-to-end test suite
+  verify-public-build.cjs     Builds + audits the public site
+  generate_qr.py              Regenerate the table QR code
 
 .github/workflows/
   deploy-pages.yml            Publishes ONLY the customer menu
-
-worker/                      Admin-auth Cloudflare Worker — git-ignored, local only
-  (see worker/ARCHITECTURE.md and worker/DEPLOY.md)
 ```
 
 `config.js` and `menu.csv` hold the content. Everything else is code.
@@ -82,35 +81,60 @@ The admin panel is **not on the public site**. Run it locally:
 npm start                       # http://localhost:8080/admin.html
 ```
 
-### Signing in (GitHub OAuth — one-time setup)
+### Signing in (local phone number + password)
 
-There is no password. Sign-in is **"Sign in with GitHub"**, authorized
-server-side by a small Cloudflare Worker (`worker/`) that checks your GitHub
-account against a single allow-listed username. Full flow and threat model in
-[`worker/ARCHITECTURE.md`](worker/ARCHITECTURE.md).
+Copy the credentials template and set your own login:
 
-One-time setup (a few minutes, needs a free Cloudflare account):
-see [`worker/DEPLOY.md`](worker/DEPLOY.md).
+```bash
+cp src/core/admin-credentials.sample.js src/core/admin-credentials.js
 
-Until that's done, the admin panel correctly shows "not configured" and
-refuses all access — it fails closed, not open.
+# Generate a hash for your phone number + password
+node -e "console.log(require('crypto').createHash('sha256').update('ndd-admin-v1:PHONE:PASSWORD').digest('hex'))"
+```
 
-> **What this protects.** Authorization is decided by the Worker, server-side
-> — not by anything this page's JavaScript can be tricked into skipping. No
-> password, GitHub token, or OAuth secret is ever sent to, or readable by, the
-> browser. Full analysis in [SECURITY.md](SECURITY.md) (local file, not
-> published — see below).
+Paste the phone number and hash into `admin-credentials.js`. That file is
+**git-ignored** — it never enters the repository or the public site. Without
+it, the admin panel refuses every sign-in.
+
+> **What this protects, honestly.** This is a static site with no server, so
+> the phone+password check runs in the browser and is not a real security
+> boundary — it stops a customer who finds the page from touching the editor,
+> nothing more. The actual protection for the live website is described below:
+> publishing needs a GitHub token that is never stored anywhere.
 
 ---
 
 ## Editing the menu
 
-1. Open **admin.html** and click **Sign in with GitHub**.
+The flow is:
+
+**Admin Login → Edit / Add / Delete Menu → Preview → Commit & Push (GitHub token) → GitHub Pages Publish**
+
+1. Open **admin.html** and sign in with your phone number and password.
 2. Edit categories, items, prices, brand details and notices. Type English only.
-3. Click **Save & Publish** — the menu updates immediately in your browser.
-4. To publish for *all* customers, open the **Publish** tab and press
-   **Publish to Website Now**. This calls the Worker, which re-verifies your
-   session before writing anything.
+3. Click **Save & Publish** — updates the menu in your browser immediately, so
+   you can keep working across sessions.
+4. Open the **Preview** tab to see exactly what customers will see, built from
+   your current unsaved draft, before anything goes live.
+5. Open the **Publish** tab and click **Commit & Push**. You'll be asked for a
+   GitHub Personal Access Token.
+
+### About the GitHub token
+
+There is no backend, so the browser itself has to authenticate with GitHub's
+API to publish. This project minimizes what that means in practice:
+
+- The token is typed in **fresh, every time** — there is no "remember me" for it.
+- It is held **only in memory** (a JavaScript variable) for the duration of the
+  publish. It is never written to localStorage, sessionStorage, a cookie, or
+  any file.
+- It is **cleared immediately** after each publish attempt, success or failure.
+- It is sent only to `api.github.com`, over HTTPS, and nowhere else.
+
+Use a **fine-grained** token scoped to just this repository with just
+**Contents: Read and write** (the token-entry dialog links to the exact
+GitHub settings page). Scoped this way, even a misused token can only edit
+this one project's files.
 
 Publishing writes `menu.csv`, `menu-fallback.js` and `config.js` in a **single
 commit**, so GitHub Pages rebuilds once. The live site updates in about a minute.
@@ -122,8 +146,8 @@ The Publish tab also offers:
 - **Download Backup** — one JSON file with the whole menu, brand details and notices.
 - **Choose Backup File…** — restore from a backup, or from a bare `menu.csv`.
   You get a confirmation showing what the file contains before anything changes.
-- **Manual publish** — if the Worker is ever unreachable, download the three
-  files and commit them with your own git credentials instead.
+- **Manual publish** — download the three files and commit them with your own
+  git credentials instead of entering a token here.
 
 `menu.csv` can also be edited directly in Excel or Google Sheets if preferred.
 
@@ -134,18 +158,15 @@ The Publish tab also offers:
 ```bash
 npm install            # test tooling only; the site itself has no build step
 npm start              # serve at http://localhost:8080
-npm test               # end-to-end suite + public-build audit + worker auth tests
+npm test               # end-to-end suite + public-build audit
 npm run verify:public  # audit what would be published
-npm run test:worker    # admin-auth authorization logic (skips cleanly if worker/ is absent)
 ```
 
 `npm test` boots both real pages in a headless browser against the real data and
 checks rendering, navigation, language switching, theming, admin editing,
-persistence, CSV round-tripping and recovery from corrupt storage. It then
-audits the public build to confirm no admin code, credential or secret can
-reach the published site, and — if the (git-ignored, local-only) `worker/`
-directory is present — verifies the OAuth/session/CSRF authorization logic
-against the real Worker handler code.
+persistence, CSV round-tripping, the login gate, the session-only token
+handling, and the preview renderer. It then audits the public build to confirm
+no admin code, credential or secret can reach the published site.
 
 `SECURITY.md` documents the full security posture but is kept out of the
 public repository (git-ignored) since it's written for this specific

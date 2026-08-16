@@ -11,33 +11,52 @@
 <body class="signed-out">
 
 <!--
-  Sign-in screen. Shown until the admin authenticates via GitHub OAuth.
+  Sign-in screen: local phone number + password gate.
 
-  There is no password field here on purpose: authorization is decided
-  server-side by the Cloudflare Worker (see worker/src/index.js), which
-  checks the GitHub account against an allow-list after GitHub's own login
-  (including any 2FA/device verification the account has enabled). This page
-  never sees a password, a GitHub token, or any secret — only the result of
-  that server-side check.
+  Honest scope (see src/core/admin-auth.js): this only stops a customer who
+  finds the panel from seeing or touching the editor. It is not, and cannot
+  be, a real security boundary on a static site with no server. The actual
+  protection for the live site is that publishing requires a GitHub Personal
+  Access Token, entered fresh each session and never stored anywhere by this
+  app — see the Publish tab and src/core/github-publish.js.
+-->
+<!--
+  Deliberately NOT a <form> element. A <form> with a submit button can be
+  submitted natively by the browser (as a GET to this same page, putting the
+  phone number and password in the URL — in browser history, in any proxy or
+  server access log, in the Referer header of anything loaded afterward) if
+  it fires before, or without, JavaScript intercepting it. Using plain
+  buttons/inputs with no <form> ancestor makes that entire failure mode
+  structurally impossible rather than relying on preventDefault() always
+  running first.
 -->
 <div class="login-screen" id="loginScreen">
-  <div class="login-card">
+  <div class="login-card" id="loginForm">
     <img class="login-logo" src="assets/img/logo-light.png" alt="" width="56" height="56">
     <h1>New Delhi Darbar</h1>
     <p class="login-sub">Admin Panel — please sign in</p>
 
-    <button class="btn primary login-submit" id="githubSignInBtn" type="button">
-      <svg viewBox="0 0 16 16" width="18" height="18" fill="currentColor" aria-hidden="true" style="vertical-align:-3px;margin-right:6px">
-        <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/>
-      </svg>
-      Sign in with GitHub
-    </button>
-    <div class="login-error" id="loginError" role="alert"></div>
-    <div class="hint" style="margin-top:14px;text-align:left">
-      You'll be taken to GitHub's own sign-in page. Only the authorized
-      admin GitHub account can access this panel — everyone else is turned
-      away automatically after signing in.
+    <label for="loginPhone">Phone Number</label>
+    <div class="text-field">
+      <input type="text" id="loginPhone" inputmode="numeric" pattern="[0-9]*"
+             autocomplete="off" autocapitalize="off" spellcheck="false"
+             autocorrect="off" data-lpignore="true" data-1p-ignore required>
     </div>
+
+    <label for="loginPass">Password</label>
+    <div class="password-field">
+      <input type="password" id="loginPass" autocomplete="new-password"
+             autocorrect="off" data-lpignore="true" data-1p-ignore required>
+      <button type="button" class="peek-btn" id="peekBtn" aria-label="Show password">Show</button>
+    </div>
+
+    <label class="checkbox-row">
+      <input type="checkbox" id="loginRemember">
+      <span>Keep me signed in on this device</span>
+    </label>
+
+    <button class="btn primary login-submit" id="loginBtn" type="button">Sign In</button>
+    <div class="login-error" id="loginError" role="alert"></div>
 
     <a class="login-back" href="index.html">← Back to the menu</a>
   </div>
@@ -71,6 +90,7 @@
     <button class="tab active" data-tab="menu" role="tab" aria-selected="true" type="button">Menu</button>
     <button class="tab" data-tab="brand" role="tab" aria-selected="false" type="button">Brand &amp; Contact</button>
     <button class="tab" data-tab="notices" role="tab" aria-selected="false" type="button">Notices</button>
+    <button class="tab" data-tab="preview" role="tab" aria-selected="false" type="button">Preview</button>
     <button class="tab" data-tab="publish" role="tab" aria-selected="false" type="button">Publish</button>
   </div>
 
@@ -128,22 +148,52 @@
     </section>
   </div>
 
+  <!-- PREVIEW -->
+  <div class="tabpage" id="page-preview" role="tabpanel">
+    <section class="panel">
+      <h2>Preview <span class="hint" style="text-transform:none;font-weight:400">— exactly what customers will see, before you publish</span></h2>
+      <div class="hint">This reflects your current unsaved edits. Nothing here is public until you publish.</div>
+      <div class="preview-frame-wrap">
+        <iframe id="previewFrame" class="preview-frame" title="Menu preview"></iframe>
+      </div>
+    </section>
+  </div>
+
   <!-- PUBLISH -->
   <div class="tabpage" id="page-publish" role="tabpanel">
 
     <section class="panel">
-      <h2>Publish Your Changes</h2>
+      <h2>Commit &amp; Push</h2>
       <div class="hint">
-        Publishing calls the admin auth service, which re-checks that you're signed in as the authorized
-        admin account before writing anything to the repository. Your browser never holds a GitHub token —
-        see <code>worker/ARCHITECTURE.md</code> for how this works.
+        Publishing writes <code>menu.csv</code>, <code>menu-fallback.js</code> and <code>config.js</code> to the
+        repository in one commit, using a GitHub Personal Access Token you provide below.
+        <strong>The token is used only for this action and is never saved</strong> — not in this browser's
+        storage, not in any file, not anywhere. You'll need to enter it again next time.
       </div>
 
-      <button class="btn primary publish-big" id="publishBtn" type="button">Publish to Website Now</button>
+      <button class="btn primary publish-big" id="commitPushBtn" type="button">Commit &amp; Push</button>
       <div id="publishResult"></div>
 
       <details class="setup-guide" style="margin-top:14px">
-        <summary>Manual publish (if the auth service is unavailable)</summary>
+        <summary>Where do I get a token, and what should it be allowed to do?</summary>
+        <ol class="setup-steps">
+          <li>Open <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">
+              github.com/settings/personal-access-tokens/new</a>.</li>
+          <li>Under <strong>Repository access</strong>, choose <strong>Only select repositories</strong> and pick
+              <strong>New-Delhi-Darbar-Menu</strong> only.</li>
+          <li>Under <strong>Permissions → Repository permissions</strong>, set <strong>Contents</strong> to
+              <strong>Read and write</strong>. Leave everything else at no access.</li>
+          <li>Set a short expiry (7–30 days) and generate the token, then paste it into the box that appears
+              when you click <strong>Commit &amp; Push</strong>.</li>
+        </ol>
+        <div class="hint">
+          Scoping the token to just this repository and just Contents means even if it were ever misused, it
+          could only edit this one project's files — nothing else in your GitHub account.
+        </div>
+      </details>
+
+      <details class="setup-guide">
+        <summary>Manual publish (without entering a token here)</summary>
         <ol class="setup-steps">
           <li>Click <strong>Download the 3 files</strong> below.</li>
           <li>Replace them in your local copy of the repository:
@@ -188,6 +238,26 @@
   </div>
 </div>
 
+<!--
+  GitHub token entry, shown only when Commit & Push is clicked. The token is
+  read from this input straight into a JS variable (src/core/github-publish.js)
+  and used immediately — this form has no `name` attribute on the token field
+  and the page has no submit-to-server action, so there is nothing for a
+  password manager or browser autofill store to save it as, and nothing
+  written to any storage.
+-->
+<div class="token-modal" id="tokenModal" hidden>
+  <div class="token-modal-card">
+    <h3>Enter your GitHub token</h3>
+    <p class="hint">Used once for this publish, then discarded immediately. Not saved anywhere.</p>
+    <input type="password" id="tokenInput" autocomplete="off" spellcheck="false" placeholder="github_pat_…">
+    <div class="toolrow" style="margin-top:12px;justify-content:flex-end">
+      <button class="btn" id="tokenCancelBtn" type="button">Cancel</button>
+      <button class="btn primary" id="tokenConfirmBtn" type="button">Commit &amp; Push</button>
+    </div>
+  </div>
+</div>
+
 <button class="save-fab" id="saveFab" type="button" title="Save and publish your changes">
   <svg class="sync-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
     <path d="M21 12a9 9 0 0 1-15.3 6.4L3 15"/><path d="M3 12a9 9 0 0 1 15.3-6.4L21 9"/>
@@ -204,13 +274,15 @@
 <script src="src/core/i18n.js"></script>
 <script src="src/core/store.js"></script>
 <!--
-  Authentication and authorization are handled entirely by the Cloudflare
-  Worker (worker/src/index.js) via GitHub OAuth — never in this page's JS.
-  This page only ever holds an HttpOnly session cookie set by the Worker; it
-  cannot read that cookie, cannot see a password, and cannot see any GitHub
-  token. See worker/ARCHITECTURE.md for the full flow and threat model.
+  Local-only credentials for the phone+password login. Absent from any public
+  build (see .github/workflows/deploy-pages.yml and
+  scripts/verify-public-build.cjs, which allow-list only the customer menu
+  files) — a copy of this project with no credentials file has no way to log
+  in at all. Errors on 404 here are expected on any checkout without it.
 -->
-<script src="src/core/auth-client.js"></script>
+<script src="src/core/admin-credentials.js" onerror="void 0"></script>
+<script src="src/core/admin-auth.js"></script>
+<script src="src/core/github-publish.js"></script>
 <script src="src/pages/admin.js"></script>
 </body>
 </html>

@@ -657,15 +657,14 @@
   });
 
   /*
-    One-click publish, authorized server-side.
-
-    This page never holds a GitHub write token — it calls the Worker's
-    /api/publish with `credentials:'include'`, which attaches the HttpOnly
-    session cookie automatically. The Worker re-checks that session (signature,
-    expiry, and the admin-account allow-list) before writing anything. If that
-    check fails for any reason, nothing is written — there is no client-side
-    fallback path that could grant a write.
+    Commit & Push — the admin provides a GitHub Personal Access Token fresh
+    each time, typed into src/core/github-publish.js's in-memory-only holder.
+    It is never read from, or written to, localStorage/sessionStorage/any
+    file. It is cleared (GitHubPublish.clearToken()) immediately after this
+    completes, success or failure, so the token never outlives one publish.
   */
+
+  const GitHubPublish = window.NDDGitHubPublish;
 
   function resultBox(hostId, kind, title, bodyHtml) {
     const host = $(hostId);
@@ -673,40 +672,73 @@
     host.innerHTML = `<div class="result-box ${kind}"><strong>${esc(title)}</strong>${bodyHtml || ''}</div>`;
   }
 
-  if ($('publishBtn')) {
-    $('publishBtn').addEventListener('click', async () => {
+  function openTokenModal() {
+    $('tokenInput').value = '';
+    $('tokenModal').hidden = false;
+    setTimeout(() => $('tokenInput').focus(), 30);
+  }
+  function closeTokenModal() {
+    $('tokenModal').hidden = true;
+    $('tokenInput').value = '';
+  }
+
+  async function doCommitAndPush(token) {
+    GitHubPublish.setToken(token);
+    const btn = $('tokenConfirmBtn');
+    btn.disabled = true;
+    const original = btn.textContent;
+    btn.textContent = 'Publishing…';
+    resultBox('publishResult', 'ok', 'Publishing…', '');
+
+    try {
+      const result = await GitHubPublish.publishFiles([
+        { path: 'assets/data/menu.csv', content: Store.categoriesToCsv(data.categories) },
+        { path: 'src/core/menu-fallback.js', content: Store.fallbackFileText(data) },
+        { path: 'src/core/config.js', content: Store.configFileText(data) }
+      ], 'Update menu from Admin Panel');
+
+      Store.save(data);
+      clearDirty();
+      closeTokenModal();
+      resultBox('publishResult', 'ok', 'Published',
+        `<div>Live in about a minute. <a href="${esc(result.pagesUrl)}" target="_blank" rel="noopener">View the site ↗</a></div>`);
+      showStatus('Published to the website', 'ok');
+    } catch (err) {
+      resultBox('publishResult', 'err', 'Could not publish',
+        `<div>${esc(err.message)}</div><div style="margin-top:6px">Nothing was changed. Your edits are still here — try again, or use the manual files below.</div>`);
+    } finally {
+      // Always discard the token, whether this succeeded or failed — it is
+      // never kept around for a "try again" retry; re-entering it is the point.
+      GitHubPublish.clearToken();
+      btn.disabled = false;
+      btn.textContent = original;
+    }
+  }
+
+  if ($('commitPushBtn')) {
+    $('commitPushBtn').addEventListener('click', () => {
       readBrandForm();
       const problems = validate();
       if (problems.length) {
         resultBox('publishResult', 'err', 'Please fix this first', `<div>${esc(problems[0])}</div>`);
         return;
       }
+      openTokenModal();
+    });
 
-      const btn = $('publishBtn');
-      btn.disabled = true;
-      const original = btn.textContent;
-      btn.textContent = 'Publishing…';
-      resultBox('publishResult', 'ok', 'Publishing…', '');
+    $('tokenCancelBtn').addEventListener('click', closeTokenModal);
+    $('tokenModal').addEventListener('click', e => { if (e.target.id === 'tokenModal') closeTokenModal(); });
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && !$('tokenModal').hidden) closeTokenModal();
+    });
 
-      try {
-        const result = await AuthClient.publish([
-          { path: 'assets/data/menu.csv', content: Store.categoriesToCsv(data.categories) },
-          { path: 'src/core/menu-fallback.js', content: Store.fallbackFileText(data) },
-          { path: 'src/core/config.js', content: Store.configFileText(data) }
-        ], 'Update menu from Admin Panel');
-
-        Store.save(data);
-        clearDirty();
-        resultBox('publishResult', 'ok', 'Published',
-          `<div>Live in about a minute. <a href="${esc(result.pagesUrl)}" target="_blank" rel="noopener">View the site ↗</a></div>`);
-        showStatus('Published to the website', 'ok');
-      } catch (err) {
-        resultBox('publishResult', 'err', 'Could not publish',
-          `<div>${esc(err.message)}</div><div style="margin-top:6px">Nothing was changed. Your edits are still here — try Save first, then Publish again, or use the manual files below.</div>`);
-      } finally {
-        btn.disabled = false;
-        btn.textContent = original;
-      }
+    $('tokenConfirmBtn').addEventListener('click', () => {
+      const token = $('tokenInput').value.trim();
+      if (!token) { $('tokenInput').focus(); return; }
+      doCommitAndPush(token);
+    });
+    $('tokenInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); $('tokenConfirmBtn').click(); }
     });
   }
 
@@ -825,21 +857,22 @@
   /*
     ---------------- sign-in ----------------
 
-    Authentication is GitHub OAuth, handled entirely by the Cloudflare Worker
-    (worker/src/index.js). This page never sees a password or a GitHub token
-    — it only asks the Worker "am I signed in?" via an HttpOnly cookie the
-    Worker set, which this script cannot read either. See
-    worker/ARCHITECTURE.md for the full flow and why a backend is required.
+    Local phone number + password gate (src/core/admin-auth.js). Honest
+    scope: this is a static site with no server, so this check runs in the
+    browser and cannot be a real security boundary — see admin-auth.js's own
+    comments. It stops a customer who finds this page from touching the
+    editor. The real protection for the live site is that Commit & Push (see
+    above) requires a GitHub token typed in fresh each time, never stored.
   */
 
-  const AuthClient = window.NDDAuthClient;
+  const Auth = window.NDDAdminAuth;
   let booted = false;
 
-  function showPanel(login) {
+  function showPanel(phone) {
     document.body.classList.remove('signed-out');
     document.body.classList.add('signed-in');
     const who = $('whoami');
-    if (who) who.textContent = login || '';
+    if (who) who.textContent = phone || '';
     if (!booted) { booted = true; boot(); }
   }
 
@@ -848,27 +881,97 @@
     document.body.classList.add('signed-out');
     const errorEl = $('loginError');
     if (errorEl) errorEl.textContent = message || '';
+    const phoneEl = $('loginPhone');
+    if (phoneEl) setTimeout(() => phoneEl.focus(), 50);
   }
 
-  const githubBtn = $('githubSignInBtn');
-  if (githubBtn) {
-    githubBtn.addEventListener('click', () => {
-      if (!AuthClient.isConfigured()) {
-        showLogin('The admin sign-in service is not configured yet. See worker/DEPLOY.md to set it up.');
-        return;
+  async function attemptSignIn() {
+    const btn = $('loginBtn');
+    const errorEl = $('loginError');
+    errorEl.textContent = '';
+    btn.disabled = true;
+    const original = btn.textContent;
+    btn.textContent = 'Signing in…';
+
+    try {
+      const result = await Auth.signIn($('loginPhone').value, $('loginPass').value, $('loginRemember').checked);
+      if (result.ok) {
+        $('loginPass').value = '';
+        showPanel(result.phone);
+      } else {
+        errorEl.textContent = result.error;
+        $('loginPass').select();
       }
-      location.href = AuthClient.loginUrl();
+    } catch (err) {
+      errorEl.textContent = 'Could not sign in. Please try again.';
+      console.error('Sign-in failed:', err);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = original;
+    }
+  }
+
+  if ($('loginBtn')) {
+    $('loginBtn').addEventListener('click', attemptSignIn);
+    $('loginPhone').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); attemptSignIn(); } });
+    $('loginPass').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); attemptSignIn(); } });
+
+    $('peekBtn').addEventListener('click', () => {
+      const field = $('loginPass');
+      const show = field.type === 'password';
+      field.type = show ? 'text' : 'password';
+      $('peekBtn').textContent = show ? 'Hide' : 'Show';
+      $('peekBtn').setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+      field.focus();
     });
   }
 
   if ($('signOutBtn')) {
-    $('signOutBtn').addEventListener('click', async () => {
+    $('signOutBtn').addEventListener('click', () => {
       if (isDirty && !confirm('You have unsaved changes. Sign out anyway?')) return;
-      await AuthClient.signOut();
+      Auth.signOut();
       isDirty = false; // don't trigger the beforeunload prompt on reload
       location.reload();
     });
   }
+
+  /* ---------------- preview ---------------- */
+
+  function renderPreview() {
+    const frame = $('previewFrame');
+    if (!frame) return;
+    const doc = frame.contentDocument;
+    if (!doc) return;
+
+    const sections = data.categories.map(c => `
+      <section style="margin-bottom:22px">
+        <h2 style="font-size:15px;margin:0 0 8px;border-bottom:2px solid #e0824a;display:inline-block;padding-bottom:3px">
+          ${esc(Glossary.resolve(c.name, 'en'))}
+        </h2>
+        ${c.items.map(it => {
+          const nameHi = Glossary.resolve(it, 'hi'), nameGu = Glossary.resolve(it, 'gu');
+          return `<div style="display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #ece8e2">
+            <div><div style="font-weight:650">${esc(it.en)}</div>
+            <div style="font-size:11px;color:#6b6460">${esc(nameHi)} · ${esc(nameGu)}</div></div>
+            <div style="font-weight:750;color:#e0824a;white-space:nowrap">${esc(it.price)}</div></div>`;
+        }).join('')}
+      </section>`).join('');
+
+    doc.open();
+    doc.write(`<!doctype html><html><head><meta charset="utf-8">
+      <style>body{font-family:-apple-system,sans-serif;background:#f5f2ed;color:#1a1816;
+        max-width:640px;margin:0 auto;padding:20px}</style></head>
+      <body><h1 style="font-size:20px;margin:0 0 4px">${esc(data.brand.name || '')}</h1>
+      <div style="color:#6b6460;font-size:12px;margin-bottom:18px">${esc(data.brand.tagline || '')}</div>
+      ${sections}</body></html>`);
+    doc.close();
+  }
+
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      if (tab.dataset.tab === 'preview') renderPreview();
+    });
+  });
 
   /* ---------------- boot ---------------- */
 
@@ -887,12 +990,8 @@
     renderNotices();
   }
 
-  // Ask the Worker whether this browser already holds a valid session before
-  // deciding which screen to show. Fails closed: any error or "not
-  // configured" state shows the sign-in screen, never the panel.
-  AuthClient.checkSession().then(result => {
-    if (result.signedIn) showPanel(result.login);
-    else if (result.unconfigured) showLogin('The admin sign-in service is not configured yet. See worker/DEPLOY.md.');
-    else showLogin();
-  });
+  // Fails closed: any error or unconfigured state shows the sign-in screen,
+  // never the panel.
+  if (Auth.isSignedIn()) showPanel(Auth.currentPhone());
+  else showLogin();
 })();
