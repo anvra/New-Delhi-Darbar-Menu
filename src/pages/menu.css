@@ -11,6 +11,16 @@
     --watermark:rgba(26,24,22,.055);
     --radius:14px;
     --max:1120px;
+    /*
+      Height of the sticky top bar. The category toolbar pins itself directly
+      below this, so the two must agree exactly or content leaks through the
+      seam. menu.js measures the real rendered header and overwrites this at
+      runtime (and on resize / font-size changes), so the value here is only
+      the pre-JS starting guess.
+    */
+    --topbar-h:66px;
+    /* Side gutter for the page shell — tightened on small screens below. */
+    --gutter:14px;
   }
   html[data-theme="dark"]{
     --bg:#121110;
@@ -56,7 +66,13 @@
     white-space:nowrap;
     transform:rotate(-14deg);
   }
-  .shell{width:min(calc(100% - 28px),var(--max));margin:auto;position:relative;z-index:1}
+  .shell{
+    width:min(calc(100% - (var(--gutter) * 2)),var(--max));
+    margin:auto;position:relative;z-index:1;
+    /* Respect notches/rounded corners in landscape on iOS (viewport-fit=cover). */
+    padding-left:env(safe-area-inset-left);
+    padding-right:env(safe-area-inset-right);
+  }
 
   .brand-strip{
     display:flex;align-items:center;justify-content:center;
@@ -106,9 +122,10 @@
     background:color-mix(in srgb,var(--accent-soft) 70%,var(--surface));
   }
   @media(max-width:520px){
-    .brand-strip{margin-top:15px}
-    .brand-strip-inner{gap:6px 7px;padding:0 8px}
-    .tag-chip{font-size:10px;padding:7px 9px}
+    .brand-strip{margin-top:13px}
+    .brand-strip-inner{gap:6px 7px;padding:0 4px}
+    /* 11px is the legibility floor — 10px was too small to read on a phone. */
+    .tag-chip{font-size:11px;padding:6px 10px}
     .tag-chip.meta{width:100%;}
   }
   .topbar{position:sticky;top:0;z-index:20;
@@ -117,41 +134,71 @@
     border-bottom:1px solid color-mix(in srgb,var(--line) 70%,transparent);
   }
   .topbar-inner{
-    min-height:66px;display:flex;align-items:center;justify-content:space-between;gap:12px;
+    /* NOT var(--topbar-h) here: the header's own height must never depend on
+       a value derived by measuring the header, or a resize->measure->grow
+       feedback loop results. --topbar-h is only consumed by .toolbar below. */
+    min-height:44px;
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
   }
-  .brand{display:flex;align-items:center;gap:10px;min-width:0}
+  /*
+    `min-width:0` on both the brand and its text block is what lets the text
+    actually shrink/ellipsis instead of forcing the flex row wider than the
+    screen — without it, a long restaurant name pushes the language button
+    off-screen on narrow phones.
+  */
+  .brand{
+    display:flex;align-items:center;gap:10px;min-width:0;flex:1 1 auto;overflow:hidden;
+    /* Match the 44px tap height of the icon/language buttons beside it. */
+    min-height:44px;
+  }
   .brand-logo{width:36px;height:36px;flex-shrink:0}
   .brand-logo img{width:100%;height:100%;object-fit:contain;display:none}
   .brand-logo img.logo-light{display:block}
   html[data-theme="dark"] .brand-logo img.logo-light{display:none}
   html[data-theme="dark"] .brand-logo img.logo-dark{display:block}
   .brand-text{display:flex;flex-direction:column;min-width:0}
-  .brand strong{font-size:15px;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
+  .brand strong,.brand span{
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;max-width:100%;
+  }
+  .brand strong{font-size:15px;letter-spacing:.08em;text-transform:uppercase}
   .brand span{font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
-  .actions{display:flex;align-items:center;gap:8px}
+  .actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}
   .language-picker{position:relative}
   .icon-btn,.lang-btn{
     border:1px solid var(--line);background:var(--surface);
-    min-height:40px;border-radius:10px;cursor:pointer;
+    /* 44px is the Apple HIG / Material touch-target floor. */
+    min-height:44px;border-radius:10px;cursor:pointer;
     display:inline-flex;align-items:center;justify-content:center;
     transition:transform .18s ease,border-color .18s ease,background .18s ease;
   }
-  .icon-btn{width:40px}
-  .lang-btn{padding:0 11px;font-size:12px;font-weight:600;letter-spacing:.03em}
+  .icon-btn{width:44px;flex:0 0 auto}
+  .lang-btn{padding:0 11px;font-size:12px;font-weight:600;letter-spacing:.03em;white-space:nowrap}
   .icon-btn:hover,.lang-btn:hover{transform:translateY(-1px);border-color:var(--accent)}
   .icon-btn:focus-visible,.lang-btn:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
   .hero{padding:44px 0 30px;text-align:center}
   .eyebrow{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);font-weight:700}
   h1{font-size:clamp(32px,7vw,58px);line-height:1.02;letter-spacing:-.055em;margin:10px 0 8px;font-weight:760}
   .hero-rule{width:54px;height:1px;background:var(--accent);margin:18px auto}
-  .contact{display:flex;justify-content:center;flex-wrap:wrap;gap:8px 18px;font-size:13px;color:var(--muted)}
+  .contact{display:flex;justify-content:center;flex-wrap:wrap;gap:4px 14px;font-size:13px;color:var(--muted)}
   .contact a{padding:3px 0;border-bottom:1px solid transparent}
-  .contact a.phone{font-weight:800;font-style:italic;display:inline-flex;align-items:center;gap:5px;}
-  .contact a.phone svg{flex:0 0 auto;font-style:normal;margin-bottom:1px;}
-  .contact a:hover{border-color:var(--accent);color:var(--text)}
+  /*
+    Phone numbers are the single most-tapped thing on a restaurant menu, so
+    they get a full 44px target. Padding (not margin) so the whole area is
+    clickable, and `justify-content:center` keeps them visually centred.
+  */
+  .contact a.phone{
+    font-weight:800;font-style:italic;
+    display:inline-flex;align-items:center;justify-content:center;gap:6px;
+    min-height:44px;padding:6px 10px;border-radius:10px;
+    border-bottom:0;
+  }
+  .contact a.phone svg{flex:0 0 auto;font-style:normal}
+  .contact a.phone:hover{background:var(--surface-2);color:var(--text)}
+  .contact a:not(.phone):hover{border-color:var(--accent);color:var(--text)}
   .toolbar{
     position:sticky;
-    top:66px;
+    /* Driven by the measured header height — see --topbar-h. */
+    top:var(--topbar-h);
     z-index:15;
     display:flex;
     gap:8px;
@@ -161,7 +208,7 @@
     padding-right:18px;
     scrollbar-width:none;
     -webkit-overflow-scrolling:touch;
-    scroll-padding-left:14px;
+    scroll-padding-left:var(--gutter);
     scroll-padding-right:18px;
     background:color-mix(in srgb,var(--bg) 94%,transparent);
     backdrop-filter:saturate(140%) blur(12px);
@@ -171,10 +218,14 @@
   .cat-link{
     flex:0 0 auto;
     min-width:max-content;
+    /* Full 44px tap height without visually inflating the pill. */
+    min-height:44px;
+    display:inline-flex;
+    align-items:center;
     border:1px solid var(--line);
     background:var(--surface);
     border-radius:999px;
-    padding:9px 13px;
+    padding:9px 14px;
     font-size:12px;
     font-weight:650;
     white-space:nowrap;
@@ -345,21 +396,22 @@
 
   @media(max-width:699px){
     .toolbar{
-      top:66px;
-      margin-left:-14px;
-      margin-right:-14px;
-      padding-left:14px;
-      padding-right:24px;
+      /* Bleed the scroller to the screen edges so pills can scroll fully
+         off-screen instead of stopping short inside the shell's gutter. */
+      margin-left:calc(var(--gutter) * -1);
+      margin-right:calc(var(--gutter) * -1);
+      padding-left:var(--gutter);
+      padding-right:calc(var(--gutter) + 10px);
       gap:7px;
       overscroll-behavior-x:contain;
     }
     .cat-link{
-      padding:9px 12px;
+      padding:9px 13px;
       font-size:11.5px;
     }
   }
   @media(min-width:700px){
-    .shell{width:min(calc(100% - 48px),var(--max))}
+    :root{--gutter:24px}
     .hero{padding-top:60px}
     .grid{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
     .footer-grid{grid-template-columns:1fr auto;align-items:end}
@@ -376,6 +428,103 @@
       transform:rotate(-12deg);
     }
   }
+
+  /* ============================================================
+     Compact phones (≤430px) — the common iPhone/Android portrait
+     range. Reclaims vertical space so real menu content is visible
+     without scrolling past a full screen of branding.
+     ============================================================ */
+  @media(max-width:430px){
+    .hero{padding:26px 0 18px}
+    h1{font-size:clamp(28px,8.5vw,40px);margin:8px 0 6px}
+    .hero-rule{margin:13px auto}
+    .eyebrow{font-size:9.5px;letter-spacing:.18em}
+
+    .card-head{padding:14px 15px 11px}
+    .items{padding:2px 15px 7px}
+    .item{padding:13px 0;gap:12px}
+    .item-name{font-size:13.5px}
+    .price{font-size:12.5px;padding:5px 7px}
+    .grid{gap:12px}
+    .stock-note{font-size:12px;margin:6px 0 13px}
+
+    footer{padding:20px 0 34px}
+    .pricing-disclaimer{margin-bottom:18px}
+  }
+
+  /* ============================================================
+     Very narrow / folded devices (≤360px), e.g. Galaxy Fold closed
+     at 280px and older 320px phones. Everything must still fit
+     without horizontal scroll or clipped words.
+     ============================================================ */
+  @media(max-width:360px){
+    :root{--gutter:10px}
+
+    /* Reclaim header width: drop the logo and the "Restaurant" line so the
+       name itself has room, rather than letting all three fight for it. */
+    .brand-logo{display:none}
+    .brand span{display:none}
+    .brand strong{font-size:13px;letter-spacing:.05em}
+    .topbar-inner{gap:8px}
+
+    /* Shrink the language button to its code (EN/हि/ગુ) — the full word
+       doesn't fit alongside the brand name at this width. */
+    .lang-btn{padding:0 9px;font-size:11.5px}
+
+    h1{font-size:clamp(24px,9vw,32px);letter-spacing:-.04em}
+    /* 11px is the legibility floor — do not go smaller even at this width. */
+    .tag-chip{font-size:11px;padding:6px 9px}
+    .item{gap:10px}
+    .item-name{font-size:13px}
+    .price{font-size:12px;padding:4px 6px}
+    .card-head{padding:13px 13px 10px}
+    .items{padding:2px 13px 6px}
+    .card h2{font-size:15px}
+    .notice-section{padding:13px 13px 14px}
+  }
+
+  /* ============================================================
+     Short viewports — phones in landscape, and folded/flip devices.
+     Keyed on HEIGHT, not width, because the problem here is vertical:
+     sticky chrome plus a tall hero can leave almost no room for the
+     menu itself. Measured at 126px chrome on a 390px-tall viewport
+     before this block existed.
+     ============================================================ */
+  @media(max-height:500px) and (orientation:landscape){
+    /*
+      Touch targets stay at the full 44px floor even here — a cramped
+      viewport is not a reason to make buttons harder to hit. All the space
+      savings below come from padding/margins/font-size, never from shrinking
+      anything a finger has to land on. --topbar-h is left to the runtime
+      measurement in menu.js rather than hardcoded, since it now reflects
+      whatever the (still 44px-tall) header actually renders at.
+    */
+
+    /* Compress the hero hard — in landscape the customer wants the menu,
+       not a full-screen title card. */
+    .hero{padding:10px 0 8px}
+    h1{font-size:clamp(20px,4.5vw,28px);margin:3px 0 3px}
+    .hero-rule{margin:6px auto}
+    .brand-strip{margin:6px auto 2px}
+    .eyebrow{font-size:9px}
+    .contact{gap:2px 12px}
+    .contact a.phone{padding:2px 8px}
+
+    .toolbar{padding:4px 0 6px}
+    .cat-link{padding:0 12px}
+    .stock-note{margin:4px 0 8px;font-size:11.5px}
+  }
+
+  /* ============================================================
+     Foldables & small tablets in the 520–839px band (Surface Duo,
+     Galaxy/Pixel Fold unfolded). Wide enough for two columns, but
+     the single-column phone layout would waste half the screen.
+     ============================================================ */
+  @media(min-width:560px) and (max-width:699px){
+    .grid{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
+    .notice{grid-column:1/-1}
+  }
+
   @media(prefers-reduced-motion:reduce){
     html{scroll-behavior:auto}
     *{transition:none!important}
@@ -421,10 +570,15 @@
     letter-spacing:.02em;
   }
   .address-link{
-    display:inline-flex;align-items:center;gap:5px;
+    display:inline-flex;align-items:center;gap:6px;
+    /* Real 44px tap target — this opens Maps, it's an action link, not
+       decorative prose, so it gets the same touch-target floor as buttons. */
+    min-height:44px;padding:4px 2px;
     border-bottom:1px solid transparent;
-    transition:border-color .18s ease,color .18s ease;
+    transition:border-color .18s ease,color .18s ease,background .18s ease;
+    border-radius:8px;
   }
+  .address-link:hover{background:var(--surface-2)}
   .address-link svg{flex:0 0 auto}
   .address-link[aria-disabled="true"]{pointer-events:none;opacity:.75}
   .admin-link{margin-top:8px}

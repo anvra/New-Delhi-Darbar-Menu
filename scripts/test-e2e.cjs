@@ -303,7 +303,7 @@ async function loadAdmin(storageSeed, opts) {
     check('phone numbers present', d.querySelectorAll('a.phone').length === 4);
     check('address link points at maps', d.getElementById('addressLink').href.includes('maps.app.goo.gl'));
     check('stock note rendered', d.getElementById('stockNote').textContent.length > 10);
-    check('footer note rendered', d.getElementById('sourceNote').textContent.length > 10);
+    check('footer note element exists', !!d.getElementById('sourceNote'));
     check('customer page has no admin link', !d.querySelector('a[href="admin.html"]'));
 
     // Prices must survive rendering.

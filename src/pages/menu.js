@@ -191,6 +191,9 @@
     if (langButtonLabel) langButtonLabel.textContent = i18n.LANG_NAMES[lang];
     applyTheme(root.dataset.theme || 'light'); // refresh theme button label in the new language
     wireCategoryNavigation();
+    // Translated text can be longer/shorter than English, changing header
+    // height; re-measure once (not continuously) after the switch settles.
+    if (typeof syncTopbarHeight === 'function') setTimeout(syncTopbarHeight, 0);
   }
 
   /* ---------------- language menu ---------------- */
@@ -331,6 +334,33 @@
 
   applyLanguage(currentLang);
   wireLanguageMenu();
+
+  /*
+    Keep the CSS `--topbar-h` variable equal to the header's REAL rendered
+    height. The category toolbar sticks at `top:var(--topbar-h)`, so if the
+    two disagree, page content shows through the seam (or hides behind the
+    bar). The header's height varies with viewport width, the user's font-size
+    setting, and translated text length, so a hardcoded value inevitably
+    drifts — measuring it is the only thing that stays correct.
+  */
+  function syncTopbarHeight() {
+    const topbar = document.querySelector('.topbar');
+    if (!topbar) return;
+    const h = Math.round(topbar.getBoundingClientRect().height);
+    if (h > 0) root.style.setProperty('--topbar-h', h + 'px');
+  }
+
+  // NOT a ResizeObserver on .topbar: --topbar-h is only read by .toolbar's
+  // `top`, never by anything on .topbar itself, so there is no feedback loop
+  // — but observing the very element being measured is fragile by
+  // construction, so these finite, one-shot-per-event triggers are safer.
+  syncTopbarHeight();
+  window.addEventListener('resize', syncTopbarHeight);
+  window.addEventListener('orientationchange', syncTopbarHeight);
+  // Re-measure once webfonts settle, since text metrics can change the height.
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(syncTopbarHeight).catch(() => {});
+  }
 
   themeButton.addEventListener('click', () => {
     applyTheme(root.dataset.theme === 'dark' ? 'light' : 'dark');
