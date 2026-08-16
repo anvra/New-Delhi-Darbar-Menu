@@ -656,9 +656,16 @@
     download('config.js', Store.configFileText(data));
   });
 
-  /* ---------------- GitHub publishing ---------------- */
+  /*
+    One-click publish, authorized server-side.
 
-  const GitHub = window.NDDGitHub;
+    This page never holds a GitHub write token — it calls the Worker's
+    /api/publish with `credentials:'include'`, which attaches the HttpOnly
+    session cookie automatically. The Worker re-checks that session (signature,
+    expiry, and the admin-account allow-list) before writing anything. If that
+    check fails for any reason, nothing is written — there is no client-side
+    fallback path that could grant a write.
+  */
 
   function resultBox(hostId, kind, title, bodyHtml) {
     const host = $(hostId);
@@ -666,166 +673,41 @@
     host.innerHTML = `<div class="result-box ${kind}"><strong>${esc(title)}</strong>${bodyHtml || ''}</div>`;
   }
 
-  function showGitHubState(connected, info) {
-    $('ghConnected').style.display = connected ? '' : 'none';
-    $('ghSetup').style.display = connected ? 'none' : '';
-    if (connected && info) {
-      $('ghAccountInfo').textContent = `Signed in as ${info.login} · ${info.repo}`;
-    }
-  }
-
-  async function refreshHistory() {
-    const host = $('ghHistory');
-    if (!host) return;
-    host.textContent = 'Loading…';
-    try {
-      const commits = await GitHub.recentCommits(5);
-      host.innerHTML = commits.map(c => `
-        <div class="commit-row">
-          <span class="commit-sha">${esc(c.sha)}</span>
-          <span class="commit-msg">${esc(c.message)}</span>
-          <span class="commit-date">${c.date ? new Date(c.date).toLocaleDateString() : ''}</span>
-        </div>`).join('');
-    } catch (err) {
-      host.textContent = 'Could not load recent updates.';
-    }
-  }
-
-  async function connectGitHub() {
-    const btn = $('ghConnectBtn');
-    const msg = $('ghConnectMsg');
-    const token = $('ghToken').value.trim();
-
-    // Every path below must end with a visible message — a silent failure here
-    // looks like the button is broken.
-    if (!token) {
-      msg.textContent = 'Paste your token into the box first.';
-      return;
-    }
-    if (!/^(github_pat_|ghp_|gho_|ghs_)/.test(token)) {
-      msg.textContent = 'That does not look like a GitHub token — it should start with "github_pat_" or "ghp_".';
-      return;
-    }
-
-    btn.disabled = true;
-    msg.textContent = 'Checking your token…';
-
-    try {
-      GitHub.setToken(token);
-      const info = await GitHub.verify();
-
-      if (!info.canWrite) {
-        GitHub.setToken('');
-        msg.textContent = !info.accountCanPush
-          ? 'This GitHub account does not have permission to edit the menu repository.'
-          : 'The token reached the repository but cannot read its files, so it will not be able to publish. '
-            + 'Re-create it with “Contents: Read and write”. '
-            + (info.contentsError || '');
+  if ($('publishBtn')) {
+    $('publishBtn').addEventListener('click', async () => {
+      readBrandForm();
+      const problems = validate();
+      if (problems.length) {
+        resultBox('publishResult', 'err', 'Please fix this first', `<div>${esc(problems[0])}</div>`);
         return;
       }
 
-      $('ghToken').value = '';
-      msg.textContent = '';
-      showGitHubState(true, info);
-      refreshHistory();
-      showStatus('Connected to GitHub', 'ok');
-    } catch (err) {
-      GitHub.setToken('');
-      msg.textContent = (err && err.message) || 'Could not connect. Please try again.';
-      console.error('GitHub connect failed:', err);
-    } finally {
-      btn.disabled = false;
-    }
-  }
+      const btn = $('publishBtn');
+      btn.disabled = true;
+      const original = btn.textContent;
+      btn.textContent = 'Publishing…';
+      resultBox('publishResult', 'ok', 'Publishing…', '');
 
-  async function publishToGitHub() {
-    const btn = $('ghPublishBtn');
-    readBrandForm();
+      try {
+        const result = await AuthClient.publish([
+          { path: 'assets/data/menu.csv', content: Store.categoriesToCsv(data.categories) },
+          { path: 'src/core/menu-fallback.js', content: Store.fallbackFileText(data) },
+          { path: 'src/core/config.js', content: Store.configFileText(data) }
+        ], 'Update menu from Admin Panel');
 
-    const problems = validate();
-    if (problems.length) {
-      resultBox('ghPublishResult', 'err', 'Please fix this first', `<div>${esc(problems[0])}</div>`);
-      return;
-    }
-
-    // Always save locally first, so nothing is lost if the upload fails.
-    Store.save(data);
-    clearDirty();
-
-    btn.disabled = true;
-    const originalText = btn.textContent;
-    btn.textContent = 'Publishing…';
-    resultBox('ghPublishResult', 'ok', 'Uploading your changes to the website…', '');
-
-    try {
-      const result = await GitHub.publishFiles([
-        { path: 'assets/data/menu.csv', content: Store.categoriesToCsv(data.categories) },
-        { path: 'src/core/menu-fallback.js', content: Store.fallbackFileText(data) },
-        { path: 'src/core/config.js', content: Store.configFileText(data) }
-      ], 'Update menu from Admin Panel');
-
-      resultBox('ghPublishResult', 'ok', 'Published successfully',
-        `<div>Your changes are uploaded. The live menu updates in about a minute.</div>
-         <div style="margin-top:6px">
-           <a href="${esc(result.pagesUrl)}" target="_blank" rel="noopener">Open the live menu ↗</a>
-           &nbsp;·&nbsp;
-           <a href="${esc(result.commitUrl)}" target="_blank" rel="noopener">View this update ↗</a>
-         </div>`);
-      showStatus('Published to the website', 'ok');
-      refreshHistory();
-    } catch (err) {
-      resultBox('ghPublishResult', 'err', 'Could not publish',
-        `<div>${esc(err.message)}</div>
-         <div style="margin-top:6px">Your changes are still saved on this device — nothing was lost.
-         You can try again, or use the manual files below.</div>`);
-    } finally {
-      btn.disabled = false;
-      btn.textContent = originalText;
-    }
-  }
-
-  if ($('ghConnectBtn')) {
-    // Warn about the two environments where publishing behaves differently.
-    const envWarn = $('ghEnvWarning');
-    if (envWarn) {
-      if (location.protocol === 'file:') {
-        envWarn.innerHTML = '<div class="result-box err">'
-          + '<strong>Start the local server instead of opening the file directly</strong>'
-          + '<div>The address bar starts with <code>file://</code>. Browsers block saved logins '
-          + 'and some network requests on local files, so publishing cannot work.</div>'
-          + '<div style="margin-top:6px">In a terminal, run <code>npm start</code> in the project '
-          + 'folder, then open <code>http://localhost:8080/admin.html</code>.</div>'
-          + '<div style="margin-top:6px">The admin panel is intentionally not published to the '
-          + 'public website, so there is no online version to use.</div></div>';
-      } else if (GitHub.isSessionOnly && GitHub.isSessionOnly()) {
-        envWarn.innerHTML = '<div class="result-box err">'
-          + '<strong>This browser cannot remember your token</strong>'
-          + '<div>Private/incognito mode is likely on. You can still publish, but you will need to '
-          + 'paste the token again next time.</div></div>';
+        Store.save(data);
+        clearDirty();
+        resultBox('publishResult', 'ok', 'Published',
+          `<div>Live in about a minute. <a href="${esc(result.pagesUrl)}" target="_blank" rel="noopener">View the site ↗</a></div>`);
+        showStatus('Published to the website', 'ok');
+      } catch (err) {
+        resultBox('publishResult', 'err', 'Could not publish',
+          `<div>${esc(err.message)}</div><div style="margin-top:6px">Nothing was changed. Your edits are still here — try Save first, then Publish again, or use the manual files below.</div>`);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = original;
       }
-    }
-
-    $('ghConnectBtn').addEventListener('click', connectGitHub);
-    $('ghToken').addEventListener('keydown', e => {
-      if (e.key === 'Enter') { e.preventDefault(); connectGitHub(); }
     });
-    $('ghPublishBtn').addEventListener('click', publishToGitHub);
-    $('ghRefreshBtn').addEventListener('click', refreshHistory);
-    $('ghDisconnectBtn').addEventListener('click', () => {
-      if (!confirm('Disconnect from GitHub? You will need to paste the token again to publish.')) return;
-      GitHub.setToken('');
-      showGitHubState(false);
-      showStatus('Disconnected from GitHub', 'ok');
-    });
-
-    // Restore an existing connection on load.
-    if (GitHub.hasToken()) {
-      GitHub.verify()
-        .then(info => { showGitHubState(true, info); refreshHistory(); })
-        .catch(() => { GitHub.setToken(''); showGitHubState(false); });
-    } else {
-      showGitHubState(false);
-    }
   }
 
   /* ---------------- backup & restore ---------------- */
@@ -940,69 +822,49 @@
     e.returnValue = '';
   });
 
-  /* ---------------- sign-in ---------------- */
+  /*
+    ---------------- sign-in ----------------
 
-  const Auth = window.NDDAuth;
+    Authentication is GitHub OAuth, handled entirely by the Cloudflare Worker
+    (worker/src/index.js). This page never sees a password or a GitHub token
+    — it only asks the Worker "am I signed in?" via an HttpOnly cookie the
+    Worker set, which this script cannot read either. See
+    worker/ARCHITECTURE.md for the full flow and why a backend is required.
+  */
+
+  const AuthClient = window.NDDAuthClient;
   let booted = false;
 
-  function showPanel() {
+  function showPanel(login) {
     document.body.classList.remove('signed-out');
     document.body.classList.add('signed-in');
     const who = $('whoami');
-    if (who) who.textContent = Auth.currentUser();
+    if (who) who.textContent = login || '';
     if (!booted) { booted = true; boot(); }
   }
 
-  function showLogin() {
+  function showLogin(message) {
     document.body.classList.remove('signed-in');
     document.body.classList.add('signed-out');
-    const user = $('loginUser');
-    if (user) setTimeout(() => user.focus(), 50);
+    const errorEl = $('loginError');
+    if (errorEl) errorEl.textContent = message || '';
   }
 
-  const loginForm = $('loginForm');
-  if (loginForm) {
-    loginForm.addEventListener('submit', async e => {
-      e.preventDefault();
-      const btn = $('loginBtn');
-      const errorEl = $('loginError');
-      errorEl.textContent = '';
-      btn.disabled = true;
-      btn.textContent = 'Signing in…';
-
-      try {
-        const result = await Auth.signIn(
-          $('loginUser').value, $('loginPass').value, $('loginRemember').checked);
-        if (result.ok) {
-          $('loginPass').value = '';
-          showPanel();
-        } else {
-          errorEl.textContent = result.error;
-          $('loginPass').select();
-        }
-      } catch (err) {
-        errorEl.textContent = 'Could not sign in. Please try again.';
-        console.error('Sign-in failed:', err);
-      } finally {
-        btn.disabled = false;
-        btn.textContent = 'Sign In';
+  const githubBtn = $('githubSignInBtn');
+  if (githubBtn) {
+    githubBtn.addEventListener('click', () => {
+      if (!AuthClient.isConfigured()) {
+        showLogin('The admin sign-in service is not configured yet. See worker/DEPLOY.md to set it up.');
+        return;
       }
-    });
-
-    $('peekBtn').addEventListener('click', () => {
-      const field = $('loginPass');
-      const show = field.type === 'password';
-      field.type = show ? 'text' : 'password';
-      $('peekBtn').textContent = show ? 'Hide' : 'Show';
-      $('peekBtn').setAttribute('aria-label', show ? 'Hide password' : 'Show password');
-      field.focus();
+      location.href = AuthClient.loginUrl();
     });
   }
 
   if ($('signOutBtn')) {
-    $('signOutBtn').addEventListener('click', () => {
+    $('signOutBtn').addEventListener('click', async () => {
       if (isDirty && !confirm('You have unsaved changes. Sign out anyway?')) return;
-      Auth.signOut();
+      await AuthClient.signOut();
       isDirty = false; // don't trigger the beforeunload prompt on reload
       location.reload();
     });
@@ -1025,7 +887,12 @@
     renderNotices();
   }
 
-  // Only load the menu once the admin is signed in.
-  if (Auth.isSignedIn()) showPanel();
-  else showLogin();
+  // Ask the Worker whether this browser already holds a valid session before
+  // deciding which screen to show. Fails closed: any error or "not
+  // configured" state shows the sign-in screen, never the panel.
+  AuthClient.checkSession().then(result => {
+    if (result.signedIn) showPanel(result.login);
+    else if (result.unconfigured) showLogin('The admin sign-in service is not configured yet. See worker/DEPLOY.md.');
+    else showLogin();
+  });
 })();

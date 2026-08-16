@@ -31,6 +31,52 @@
 
   function str(v) { return String(v == null ? '' : v).trim(); }
 
+  /*
+    Allow-list HTML sanitizer for the small amount of admin-authored rich text
+    (notice bodies / bulk-pricing notes) that needs emphasis like <strong>.
+
+    Rendering that text with raw innerHTML would be stored XSS: anything typed
+    into the admin textarea — or injected there via a compromised admin
+    session/browser — would execute as script for every site visitor. This
+    strips everything except a tiny fixed set of formatting tags/attributes,
+    using the browser's own HTML parser (not regex, which is not reliable for
+    HTML) so the result can only ever be inert markup.
+  */
+  const SANITIZE_ALLOWED_TAGS = new Set(['STRONG', 'B', 'EM', 'I', 'BR', 'SPAN']);
+  const SANITIZE_ALLOWED_ATTRS = new Set([]); // no attributes allowed — no href, no on*, no style
+
+  function sanitizeRichText(html) {
+    const input = str(html);
+    if (!input) return '';
+    if (typeof document === 'undefined') {
+      // No DOM available (e.g. a build script) — fail safe to escaped plain text.
+      return input.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    const template = document.createElement('template');
+    template.innerHTML = input;
+
+    function clean(node) {
+      [...node.childNodes].forEach(child => {
+        if (child.nodeType === Node.TEXT_NODE) return; // text is always safe
+        if (child.nodeType !== Node.ELEMENT_NODE || !SANITIZE_ALLOWED_TAGS.has(child.tagName)) {
+          // Disallowed element (e.g. <script>, <img onerror>, <a>): keep its
+          // text content, drop the tag and everything the tag could carry.
+          const text = document.createTextNode(child.textContent || '');
+          child.replaceWith(text);
+          return;
+        }
+        [...child.attributes].forEach(attr => {
+          if (!SANITIZE_ALLOWED_ATTRS.has(attr.name.toLowerCase())) child.removeAttribute(attr.name);
+        });
+        clean(child);
+      });
+    }
+
+    clean(template.content);
+    return template.innerHTML;
+  }
+
   function slugify(text, fallback) {
     const slug = str(text).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
     return slug || fallback || ('cat-' + Math.random().toString(36).slice(2, 8));
@@ -204,7 +250,7 @@
     loadConfig, loadCategories,
     rowsToCategories, categoriesToRows, categoriesToCsv, parseCsvText,
     configFileText, fallbackFileText,
-    slugify, str
+    slugify, str, sanitizeRichText
   };
 
 })(typeof window !== 'undefined' ? window : globalThis);

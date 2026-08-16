@@ -137,8 +137,10 @@
         ? `<ul class="bulk-list">${n.bulkList.map(b => `<li>${escapeHtml(text(b))}</li>`).join('')}</ul>`
         : '';
       // Notice bodies are admin-authored rich text and may contain <strong> etc.
-      const body = text(n.html);
-      const pricing = n.bulkPricing ? text(n.bulkPricing) : '';
+      // Sanitized (not raw innerHTML) so a compromised admin session or a
+      // pasted-in payload can never execute script against every site visitor.
+      const body = Store.sanitizeRichText(text(n.html));
+      const pricing = n.bulkPricing ? Store.sanitizeRichText(text(n.bulkPricing)) : '';
       return `
         <section class="notice-section">
           <h3 class="notice-label">${escapeHtml(text(n.title))}</h3>

@@ -10,33 +10,37 @@
 </head>
 <body class="signed-out">
 
-<!-- Sign-in screen. Shown until the admin authenticates. -->
+<!--
+  Sign-in screen. Shown until the admin authenticates via GitHub OAuth.
+
+  There is no password field here on purpose: authorization is decided
+  server-side by the Cloudflare Worker (see worker/src/index.js), which
+  checks the GitHub account against an allow-list after GitHub's own login
+  (including any 2FA/device verification the account has enabled). This page
+  never sees a password, a GitHub token, or any secret — only the result of
+  that server-side check.
+-->
 <div class="login-screen" id="loginScreen">
-  <form class="login-card" id="loginForm" autocomplete="on">
+  <div class="login-card">
     <img class="login-logo" src="assets/img/logo-light.png" alt="" width="56" height="56">
     <h1>New Delhi Darbar</h1>
     <p class="login-sub">Admin Panel — please sign in</p>
 
-    <label for="loginUser">Username</label>
-    <input type="text" id="loginUser" name="username" inputmode="numeric"
-           autocomplete="username" autocapitalize="off" spellcheck="false" required>
-
-    <label for="loginPass">Password</label>
-    <div class="password-field">
-      <input type="password" id="loginPass" name="password" autocomplete="current-password" required>
-      <button type="button" class="peek-btn" id="peekBtn" aria-label="Show password">Show</button>
+    <button class="btn primary login-submit" id="githubSignInBtn" type="button">
+      <svg viewBox="0 0 16 16" width="18" height="18" fill="currentColor" aria-hidden="true" style="vertical-align:-3px;margin-right:6px">
+        <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/>
+      </svg>
+      Sign in with GitHub
+    </button>
+    <div class="login-error" id="loginError" role="alert"></div>
+    <div class="hint" style="margin-top:14px;text-align:left">
+      You'll be taken to GitHub's own sign-in page. Only the authorized
+      admin GitHub account can access this panel — everyone else is turned
+      away automatically after signing in.
     </div>
 
-    <label class="checkbox-row">
-      <input type="checkbox" id="loginRemember">
-      <span>Keep me signed in on this device</span>
-    </label>
-
-    <button class="btn primary login-submit" id="loginBtn" type="submit">Sign In</button>
-    <div class="login-error" id="loginError" role="alert"></div>
-
     <a class="login-back" href="index.html">← Back to the menu</a>
-  </form>
+  </div>
 </div>
 
 <header>
@@ -127,117 +131,34 @@
   <!-- PUBLISH -->
   <div class="tabpage" id="page-publish" role="tabpanel">
 
-    <!-- One-click publishing -->
     <section class="panel">
-      <h2>Put Changes Live for Customers</h2>
-
-      <div class="publish-state" id="ghConnected" style="display:none">
-        <div class="publish-status ok">
-          <span class="dot-ok"></span>
-          <div>
-            <strong>Connected to GitHub</strong>
-            <div class="hint" id="ghAccountInfo"></div>
-          </div>
-          <button class="btn small" id="ghDisconnectBtn" type="button">Disconnect</button>
-        </div>
-
-        <button class="btn publish-big" id="ghPublishBtn" type="button">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M12 19V5"/><path d="m5 12 7-7 7 7"/>
-          </svg>
-          Publish to Website Now
-        </button>
-        <div class="hint" style="text-align:center">
-          This saves your changes and updates
-          <a href="https://anvra.github.io/New-Delhi-Darbar-Menu/" target="_blank" rel="noopener">the live menu</a>
-          for everyone. It takes about a minute to appear.
-        </div>
-
-        <div id="ghPublishResult"></div>
-
-        <div style="margin-top:16px">
-          <div class="toolrow" style="justify-content:space-between">
-            <strong style="font-size:12px">Recent updates</strong>
-            <button class="btn small" id="ghRefreshBtn" type="button">Refresh</button>
-          </div>
-          <div id="ghHistory" class="hint" style="margin-top:6px">Loading…</div>
-        </div>
+      <h2>Publish Your Changes</h2>
+      <div class="hint">
+        Publishing calls the admin auth service, which re-checks that you're signed in as the authorized
+        admin account before writing anything to the repository. Your browser never holds a GitHub token —
+        see <code>worker/ARCHITECTURE.md</code> for how this works.
       </div>
 
-      <div id="ghEnvWarning"></div>
+      <button class="btn primary publish-big" id="publishBtn" type="button">Publish to Website Now</button>
+      <div id="publishResult"></div>
 
-      <div class="publish-state" id="ghSetup">
-        <div class="publish-status warn">
-          <span class="dot-warn"></span>
-          <div>
-            <strong>Not connected yet</strong>
-            <div class="hint">Connect once, then publishing is a single button from now on.</div>
-          </div>
-        </div>
-
-        <details class="setup-guide" open>
-          <summary>How to connect (one time, about 2 minutes)</summary>
-          <ol class="setup-steps">
-            <li>
-              Open
-              <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">
-                this GitHub page</a> (sign in if asked). Make sure the heading says
-              <strong>Fine-grained personal access token</strong>.
-            </li>
-            <li>In <strong>Token name</strong> type: <code>New Delhi Darbar Menu</code></li>
-            <li>Under <strong>Resource owner</strong>, choose <strong>anvra</strong>
-                (the account that owns the menu).</li>
-            <li>Under <strong>Expiration</strong>, choose <strong>No expiration</strong> (or 1 year).</li>
-            <li>Under <strong>Repository access</strong>, pick <strong>Only select repositories</strong>,
-                then click <strong>Select repositories</strong> and tick
-                <strong>New-Delhi-Darbar-Menu</strong>.
-                <span class="step-warn">If you skip this, publishing fails with a “refused” error.</span></li>
-            <li>Open <strong>Permissions → Repository permissions</strong>, scroll to
-                <strong>Contents</strong>, and change its dropdown from “No access” to
-                <strong>Read and write</strong>.
-                <span class="step-warn">This is the step most often missed.</span></li>
-            <li>Click <strong>Generate token</strong> at the bottom, then <strong>copy</strong> it
-                (it starts with <code>github_pat_</code>).</li>
-            <li>Paste it in the box below and press <strong>Connect</strong>.</li>
-          </ol>
-        </details>
-
-        <details class="setup-guide">
-          <summary>Publishing was refused — how to fix it</summary>
-          <div class="hint" style="margin-top:8px">
-            A “refused” message almost always means one of these. Re-create the token and check each:
-          </div>
-          <ol class="setup-steps">
-            <li><strong>Contents is still “No access”.</strong> The token needs
-                <strong>Contents: Read and write</strong>. Read-only is not enough to publish.</li>
-            <li><strong>The repository was not selected.</strong> Under Repository access the token must
-                explicitly list <strong>New-Delhi-Darbar-Menu</strong>. “Public repositories” only grants
-                read access and cannot publish.</li>
-            <li><strong>Wrong resource owner.</strong> The token must be created under
-                <strong>anvra</strong>, the account that owns the repository.</li>
-            <li><strong>A classic token was used.</strong> Classic tokens need the full
-                <code>repo</code> scope ticked. A fine-grained token is easier and safer.</li>
-            <li><strong>The token expired</strong>, or was revoked. Generate a new one.</li>
-          </ol>
-          <div class="hint">
-            You can check what a token is allowed to do at
-            <a href="https://github.com/settings/tokens" target="_blank" rel="noopener">github.com/settings/tokens</a>.
-            Nothing is ever lost while this is being sorted out — your changes stay saved on this device,
-            and the manual file downloads below always work.
-          </div>
-        </details>
-
-        <label for="ghToken">Paste your GitHub token here</label>
-        <input type="password" id="ghToken" placeholder="github_pat_…" autocomplete="off" spellcheck="false">
-        <div class="hint">
-          Stored only in this browser and sent only to GitHub. Anyone using this computer could publish,
-          so use a personal device.
-        </div>
+      <details class="setup-guide" style="margin-top:14px">
+        <summary>Manual publish (if the auth service is unavailable)</summary>
+        <ol class="setup-steps">
+          <li>Click <strong>Download the 3 files</strong> below.</li>
+          <li>Replace them in your local copy of the repository:
+            <code>menu.csv</code> → <code>assets/data/</code>,
+            the other two → <code>src/core/</code>.</li>
+          <li>Commit and push using your own git credentials
+            (<code>git add . &amp;&amp; git commit -m "Update menu" &amp;&amp; git push</code>).</li>
+          <li>GitHub Actions rebuilds the public site automatically after the push.</li>
+        </ol>
         <div class="toolrow" style="margin-top:10px">
-          <button class="btn primary" id="ghConnectBtn" type="button">Connect</button>
-          <span id="ghConnectMsg" class="hint"></span>
+          <button class="btn" id="downloadCsvBtn" type="button">⬇ menu.csv</button>
+          <button class="btn" id="downloadFallbackBtn" type="button">⬇ menu-fallback.js</button>
+          <button class="btn" id="downloadConfigBtn" type="button">⬇ config.js</button>
         </div>
-      </div>
+      </details>
     </section>
 
     <!-- Backup & restore -->
@@ -264,21 +185,6 @@
       </div>
       <div id="restoreResult"></div>
     </section>
-
-    <!-- Manual fallback -->
-    <section class="panel">
-      <h2>Manual Files <span class="hint" style="text-transform:none;font-weight:400">— only if publishing above is unavailable</span></h2>
-      <div class="hint">
-        Download these and commit them to the repository by hand:
-        <code>menu.csv</code> → <code>assets/data/</code>,
-        the other two → <code>src/core/</code>.
-      </div>
-      <div class="toolrow" style="margin-top:10px">
-        <button class="btn" id="downloadCsvBtn" type="button">⬇ menu.csv</button>
-        <button class="btn" id="downloadFallbackBtn" type="button">⬇ menu-fallback.js</button>
-        <button class="btn" id="downloadConfigBtn" type="button">⬇ config.js</button>
-      </div>
-    </section>
   </div>
 </div>
 
@@ -297,13 +203,14 @@
 <script src="src/core/glossary.js"></script>
 <script src="src/core/i18n.js"></script>
 <script src="src/core/store.js"></script>
-<script src="src/core/github.js"></script>
 <!--
-  Local-only credentials. Absent from any public build, which is what makes
-  the published copy unusable for editing. Errors on 404 are expected there.
+  Authentication and authorization are handled entirely by the Cloudflare
+  Worker (worker/src/index.js) via GitHub OAuth — never in this page's JS.
+  This page only ever holds an HttpOnly session cookie set by the Worker; it
+  cannot read that cookie, cannot see a password, and cannot see any GitHub
+  token. See worker/ARCHITECTURE.md for the full flow and threat model.
 -->
-<script src="src/core/admin-credentials.js" onerror="void 0"></script>
-<script src="src/core/auth.js"></script>
+<script src="src/core/auth-client.js"></script>
 <script src="src/pages/admin.js"></script>
 </body>
 </html>

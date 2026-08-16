@@ -9,3 +9,9 @@ src/core/admin-credentials.js
 
 # Generated public build output
 public/
+
+# Internal security notes — not for the public repo
+SECURITY.md
+
+# Admin-auth Cloudflare Worker — kept out of the public repo by choice
+worker/

@@ -39,29 +39,39 @@ const FORBIDDEN_FILES = [
   'admin.html',
   'src/pages/admin.js',
   'src/pages/admin.css',
-  'src/core/auth.js',
-  'src/core/github.js',
-  'src/core/admin-credentials.js',
+  'src/core/auth-client.js',
   'package.json',
   'package-lock.json',
   'README.md',
   '.gitignore'
 ];
 
-const FORBIDDEN_DIRS = ['scripts', '.github', 'node_modules', '.git'];
+const FORBIDDEN_DIRS = ['scripts', '.github', 'worker', 'node_modules', '.git'];
 
-/* Substrings that would indicate a secret or an editing capability leaked. */
+/*
+  Substrings that would indicate a secret or an admin-only capability leaked.
+
+  Authentication/authorization now live entirely in the Cloudflare Worker
+  (worker/), which is not part of this repo's public build and holds no
+  secret in any file this script can see — so there is nothing worker-side
+  to check for here. This list instead guards the browser-visible surface:
+  no GitHub API call, no session-cookie machinery, and no legacy artifact
+  from the removed password/PAT-based flows should ever reappear.
+*/
 const FORBIDDEN_STRINGS = [
   { pattern: /github_pat_[A-Za-z0-9_]{20,}/, label: 'a GitHub fine-grained token' },
   { pattern: /ghp_[A-Za-z0-9]{20,}/, label: 'a GitHub classic token' },
   { pattern: /BEGIN [A-Z ]*PRIVATE KEY/, label: 'a private key' },
-  { pattern: /NDD_CREDENTIALS/, label: 'the credentials hook' },
-  { pattern: /NDDAuth/, label: 'the authentication module' },
-  { pattern: /NDDGitHub/, label: 'the GitHub publishing module' },
-  { pattern: /Thiskeyndd/, label: 'the admin password' },
-  { pattern: /api\.github\.com/, label: 'a GitHub API call' },
-  { pattern: /ndd-github-token/, label: 'the token storage key' },
-  { pattern: /ndd-admin-session/, label: 'the admin session key' }
+  { pattern: /NDDAuthClient/, label: 'the admin auth client module' },
+  { pattern: /api\.github\.com/, label: 'a direct GitHub API call' },
+  { pattern: /ndd_session/, label: 'the admin session cookie name' },
+  { pattern: /ndd_oauth_state/, label: 'the OAuth CSRF-state cookie name' },
+  // Legacy artifacts from removed flows — must never resurface.
+  { pattern: /NDD_CREDENTIALS/, label: 'the removed local-credentials hook' },
+  { pattern: /NDDAuth\b/, label: 'the removed client-side auth module' },
+  { pattern: /NDDGitHub/, label: 'the removed browser GitHub-publish module' },
+  { pattern: /ndd-github-token/, label: 'the removed PAT storage key' },
+  { pattern: /ndd-admin-session/, label: 'the removed local-session storage key' }
 ];
 
 let failures = [];

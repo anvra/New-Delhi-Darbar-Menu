@@ -45,7 +45,7 @@ function makeStorage(seed) {
   `download` mode to read from disk — this exercises the real code path
   including the store's fallback logic.
 */
-async function loadPage(file, storageSeed) {
+async function loadPage(file, storageSeed, beforeAdminJs) {
   const virtualConsole = new VirtualConsole();
   const consoleErrors = [];
   virtualConsole.on('jsdomError', e => consoleErrors.push(e.message));
@@ -97,17 +97,14 @@ async function loadPage(file, storageSeed) {
   };
   window.Papa = Papa;
 
-  // Load local scripts in document order.
-  //
-  // admin-credentials.js is git-ignored and absent from any public build, so
-  // it is skipped here too. Tests inject their own throwaway credential; this
-  // also means the suite exercises the same "no credentials" state a published
-  // copy would be in.
+  // Load local scripts in document order. admin.js runs its sign-in check as
+  // the last statement of its IIFE, so a `beforeAdminJs` hook (used to install
+  // a mock NDDAuthClient) runs right after auth-client.js and before admin.js.
   const scripts = [...dom.window.document.querySelectorAll('script[src]')]
     .map(s => s.getAttribute('src'))
-    .filter(src => !/^https?:/.test(src))
-    .filter(src => !/admin-credentials\.js$/.test(src));
+    .filter(src => !/^https?:/.test(src));
   for (const src of scripts) {
+    if (beforeAdminJs && /\/admin\.js$/.test(src)) beforeAdminJs(window);
     window.eval(fs.readFileSync(path.join(ROOT, src), 'utf8'));
   }
 
@@ -117,37 +114,46 @@ async function loadPage(file, storageSeed) {
 }
 
 /*
-  The admin panel is behind a sign-in; most tests want it already unlocked.
+  The admin panel authenticates via GitHub OAuth against a Cloudflare Worker
+  (worker/), which is tested separately and directly (worker/test-worker.mjs)
+  against its real handler code. From this page's point of view, all that
+  matters is: does NDDAuthClient.checkSession() report signedIn, and does
+  .publish() succeed? So these tests replace that client with a stub that
+  behaves like an already-authorized Worker session — exercising the SAME
+  admin.js code paths (showPanel/showLogin/boot/publish) without needing a
+  live network call to a real Worker deployment.
 
-  Credentials come from the environment so no real password is committed.
-  Tests that need a working sign-in create their OWN throwaway credential
-  (see installTestCredential) rather than depending on the production one.
+  ADMIN_USER here is just a display name for the mocked session — it has no
+  relationship to any real credential; there is no password anywhere in this
+  architecture to leak.
 */
-const ADMIN_USER = process.env.NDD_TEST_USER || 'test-admin';
-const ADMIN_PASS = process.env.NDD_TEST_PASS || 'test-password-not-real';
+const ADMIN_USER = 'anvra';
 
-/*
-  Replace the shipped credential list with a known test-only one, so the suite
-  never needs to know the real password. Mirrors auth.js's hashing.
-*/
-async function installTestCredential(window) {
-  const Auth = window.NDDAuth;
-  if (!Auth || !Auth._setCredentialsForTesting) return;
-  const hash = await Auth.sha256Hex('ndd-admin-v1:' + ADMIN_USER + ':' + ADMIN_PASS);
-  Auth._setCredentialsForTesting([{ username: ADMIN_USER, hash }]);
+function mockAuthClient(window, opts) {
+  const signedIn = !opts || opts.signedIn !== false;
+  const publishResult = (opts && opts.publishResult) || {
+    sha: 'abc1234',
+    commitUrl: 'https://github.com/anvra/New-Delhi-Darbar-Menu/commit/abc1234',
+    pagesUrl: 'https://anvra.github.io/New-Delhi-Darbar-Menu/'
+  };
+  const publishError = opts && opts.publishError;
+
+  window.NDDAuthClient = {
+    isConfigured: () => true,
+    loginUrl: () => 'https://mock-worker.example/auth/login',
+    checkSession: async () => (signedIn ? { signedIn: true, login: ADMIN_USER } : { signedIn: false }),
+    signOut: async () => {},
+    publish: async (files, message) => {
+      window.__lastPublishCall = { files, message };
+      if (publishError) throw new Error(publishError);
+      return publishResult;
+    }
+  };
 }
 
-async function loadAdmin(storageSeed) {
-  const page = await loadPage('admin.html', storageSeed);
-  await installTestCredential(page.window);
-  const d = page.window.document;
-  if (d.body.classList.contains('signed-out')) {
-    d.getElementById('loginUser').value = ADMIN_USER;
-    d.getElementById('loginPass').value = ADMIN_PASS;
-    d.getElementById('loginForm').dispatchEvent(
-      new page.window.Event('submit', { bubbles: true, cancelable: true }));
-    await new Promise(r => setTimeout(r, 120));
-  }
+async function loadAdmin(storageSeed, authOpts) {
+  const page = await loadPage('admin.html', storageSeed, w => mockAuthClient(w, authOpts));
+  await new Promise(r => setTimeout(r, 60));
   return page;
 }
 
@@ -281,6 +287,37 @@ async function loadAdmin(storageSeed) {
     check('notices render', d.querySelectorAll('.notice-section').length === 2);
     check('notice HTML emphasis preserved', !!d.querySelector('.notice-section strong'));
     check('bulk list renders', d.querySelectorAll('.bulk-list li').length === 3);
+
+    // Stored-XSS regression: notice body/pricing come from admin-authored
+    // content and must be sanitized, never raw innerHTML. A future admin
+    // edit (or a compromised admin session) must not be able to inject a
+    // script that runs for every visitor of the public menu.
+    const Store = menu.window.NDDStore;
+    const payloads = [
+      ['<script>window.__xss=1<\/script>', 'window.__xss=1'],
+      ['<img src=x onerror="window.__xss=2">', ''],
+      ['<a href="javascript:window.__xss=3">click</a>', 'click'],
+      ['<strong onclick="window.__xss=4">bold</strong>', undefined]
+    ];
+    payloads.forEach(([payload, expectedText]) => {
+      const out = Store.sanitizeRichText(payload);
+      check(`sanitizer neutralizes: ${payload.slice(0, 40)}`,
+        !/on\w+\s*=|javascript:|<script/i.test(out), out);
+      if (expectedText !== undefined) {
+        check(`sanitizer keeps safe text for: ${payload.slice(0, 40)}`,
+          out.includes(expectedText) || expectedText === '', out);
+      }
+    });
+    check('sanitizer preserves an allow-listed tag',
+      Store.sanitizeRichText('<strong>ok</strong>') === '<strong>ok</strong>');
+
+    // The actual injection point: assigning sanitized output to innerHTML of a
+    // real element must never execute script, matching exactly what menu.js does.
+    menu.window.__xss = undefined;
+    const probe = d.createElement('div');
+    probe.innerHTML = Store.sanitizeRichText('<img src=x onerror="window.__xss=true">');
+    check('sanitized payload does not execute when assigned to innerHTML',
+      menu.window.__xss !== true);
   }
 
   /* ---------------- 3. Language switching on the live page ---------------- */
@@ -527,154 +564,19 @@ async function loadAdmin(storageSeed) {
         .textContent.includes('English'));
   }
 
-  /* ---------------- 9. GitHub publishing ---------------- */
+  /*
+    Browser-based GitHub publishing (a page accepting a write-scoped PAT) was
+    removed as a frontend-authorization anti-pattern — see admin.js and
+    SECURITY.md. Its former tests are gone with it. What remains below
+    (section 9) replaces the one behavior worth keeping: the menu must still
+    render from the embedded fallback when opened over file://, independent
+    of any publishing mechanism.
+  */
+
+  /* ---------------- 9. Customer menu still works on file:// ---------------- */
   {
-    const admin3 = await loadAdmin();
-    const w = admin3.window;
-    const d = w.document;
-    const GH = w.NDDGitHub;
-
-    // UTF-8 safe base64 — plain btoa() corrupts Devanagari/Gujarati.
-    const tricky = 'चिकन मसाला — ચિકન મસાલા';
-    eq('base64 round-trips Indic text', GH.fromBase64(GH.toBase64(tricky)), tricky);
-
-    // Setup guide is shown until connected.
-    check('shows setup guide when not connected', d.getElementById('ghSetup').style.display !== 'none');
-    check('hides publish button when not connected',
-      d.getElementById('ghConnected').style.display === 'none');
-    check('setup guide gives numbered steps',
-      d.querySelectorAll('.setup-steps li').length >= 6);
-    check('setup guide links to the token page',
-      !!d.querySelector('a[href*="personal-access-tokens"]'));
-
-    // Publishing must send exactly the three files, in one commit.
-    const calls = [];
-    w.fetch = async (url, opts) => {
-      calls.push({ url, opts });
-      const body = opts && opts.body ? JSON.parse(opts.body) : {};
-      const json = (o) => ({ ok: true, status: 200, json: async () => o });
-      if (/\/git\/ref\/heads\//.test(url)) return json({ object: { sha: 'headsha' } });
-      if (/\/git\/commits\/headsha/.test(url)) return json({ tree: { sha: 'treesha' } });
-      if (/\/git\/blobs/.test(url)) return json({ sha: 'blob-' + calls.length });
-      if (/\/git\/trees/.test(url)) return json({ sha: 'newtree' });
-      if (/\/git\/commits/.test(url)) return json({ sha: 'abcdef1234567890' });
-      if (/\/git\/refs\/heads\//.test(url)) return json({});
-      if (/\/repos\/[^/]+\/[^/]+$/.test(url)) return json({ full_name: 'anvra/New-Delhi-Darbar-Menu', permissions: { push: true } });
-      if (/\/user$/.test(url)) return json({ login: 'anvra' });
-      if (/\/commits\?/.test(url)) return json([]);
-      return json({});
-    };
-
-    GH.setToken('github_pat_test');
-    const info = await GH.verify();
-    eq('verify reports the account', info.login, 'anvra');
-    check('verify detects write access', info.canWrite === true);
-
-    calls.length = 0;
-    const res = await GH.publishFiles([
-      { path: 'assets/data/menu.csv', content: 'a,b\n1,2\n' },
-      { path: 'src/core/menu-fallback.js', content: '// x' },
-      { path: 'src/core/config.js', content: '// y' }
-    ], 'Update menu from Admin Panel');
-
-    const blobCalls = calls.filter(c => /\/git\/blobs/.test(c.url));
-    eq('uploads one blob per file', blobCalls.length, 3);
-    const treeCall = calls.find(c => /\/git\/trees/.test(c.url));
-    const treePaths = JSON.parse(treeCall.opts.body).tree.map(t => t.path);
-    check('commits menu.csv to the right path', treePaths.includes('assets/data/menu.csv'));
-    check('commits fallback to the right path', treePaths.includes('src/core/menu-fallback.js'));
-    check('commits config to the right path', treePaths.includes('src/core/config.js'));
-    eq('creates exactly one commit', calls.filter(c => /\/git\/commits$/.test(c.url)).length, 1);
-    check('moves the branch to the new commit',
-      calls.some(c => /\/git\/refs\/heads\//.test(c.url) && c.opts.method === 'PATCH'));
-    eq('returns the pages url', res.pagesUrl, 'https://anvra.github.io/New-Delhi-Darbar-Menu/');
-    check('returns a short sha', res.sha.length === 7);
-
-    // Blob content must survive as valid UTF-8 through base64.
-    const sent = JSON.parse(blobCalls[0].opts.body);
-    eq('blob encoding declared', sent.encoding, 'base64');
-    eq('blob content round-trips', GH.fromBase64(sent.content), 'a,b\n1,2\n');
-
-    // Errors must be explained in plain language, not raw status codes.
-    w.fetch = async () => ({ ok: false, status: 401, json: async () => ({ message: 'Bad credentials' }) });
-    let msg = '';
-    try { await GH.verify(); } catch (e) { msg = e.message; }
-    check('401 produces a human explanation', /token/i.test(msg) && !/401/.test(msg), msg);
-
-    w.fetch = async () => ({ ok: false, status: 403, json: async () => ({}) });
-    try { await GH.verify(); } catch (e) { msg = e.message; }
-    check('403 explains the likely causes',
-      /Contents/.test(msg) && /Repository access/i.test(msg), msg);
-
-    GH.setToken('');
-    check('clearing the token disconnects', !GH.hasToken());
-
-    // A network-level failure must be explained, not surfaced as "Failed to fetch".
-    GH.setToken('github_pat_x');
-    w.fetch = async () => { throw new TypeError('Failed to fetch'); };
-    try { await GH.verify(); } catch (e) { msg = e.message; }
-    check('network failure is explained plainly', /internet connection/i.test(msg), msg);
-    GH.setToken('');
-  }
-
-  /* ---------------- 9b. Connect button always reports back ---------------- */
-  {
-    // Regression: on file:// and in private mode, localStorage.setItem THROWS.
-    // That aborted connectGitHub() before any message rendered, so the button
-    // appeared to do nothing at all.
-    const admin5 = await loadAdmin();
-    const w = admin5.window;
-    const d = w.document;
-
-    const hostile = {
-      getItem() { throw new Error('localStorage disabled'); },
-      setItem() { throw new Error('localStorage disabled'); },
-      removeItem() { throw new Error('localStorage disabled'); }
-    };
-    Object.defineProperty(w, 'localStorage', { value: hostile, configurable: true });
-
-    // Re-evaluate the module so it probes the hostile storage.
-    w.eval(fs.readFileSync(path.join(ROOT, 'src/core/github.js'), 'utf8'));
-    const GH = w.NDDGitHub;
-
-    let threw = false;
-    try { GH.setToken('github_pat_abc'); } catch (e) { threw = true; }
-    check('setToken survives unusable localStorage', !threw);
-    eq('token still readable from memory', GH.getToken(), 'github_pat_abc');
-    check('reports that storage is session-only', GH.isSessionOnly() === true);
-    check('hasToken works without storage', GH.hasToken());
-    GH.setToken('');
-    check('clearing works without storage', !GH.hasToken());
-
-    // The button must always leave a message behind.
-    const msgEl = d.getElementById('ghConnectMsg');
-    const tokenEl = d.getElementById('ghToken');
-    const connectBtn = d.getElementById('ghConnectBtn');
-
-    tokenEl.value = '';
-    connectBtn.click();
-    await new Promise(r => setTimeout(r, 20));
-    check('empty token gives a message', msgEl.textContent.length > 0, msgEl.textContent);
-
-    tokenEl.value = 'not-a-real-token';
-    connectBtn.click();
-    await new Promise(r => setTimeout(r, 20));
-    check('malformed token is rejected with advice',
-      /github_pat_/.test(msgEl.textContent), msgEl.textContent);
-
-    // A rejected token must also report, and must re-enable the button.
-    w.fetch = async () => ({ ok: false, status: 401, json: async () => ({ message: 'Bad credentials' }) });
-    tokenEl.value = 'github_pat_looksvalid';
-    connectBtn.click();
-    await new Promise(r => setTimeout(r, 40));
-    check('rejected token shows an explanation', /token/i.test(msgEl.textContent), msgEl.textContent);
-    check('connect button is re-enabled after failure', !connectBtn.disabled);
-  }
-
-  /* ---------------- 9c. file:// is called out in the UI ---------------- */
-  {
-    const dom = new JSDOM(fs.readFileSync(path.join(ROOT, 'admin.html'), 'utf8'), {
-      runScripts: 'outside-only', url: 'file:///C:/menu/admin.html', pretendToBeVisual: true
+    const dom = new JSDOM(fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8'), {
+      runScripts: 'outside-only', url: 'file:///C:/menu/index.html', pretendToBeVisual: true
     });
     const w = dom.window;
     const map = new Map();
@@ -687,9 +589,6 @@ async function loadAdmin(storageSeed) {
     });
     w.matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {} });
     w.scrollTo = () => {}; w.confirm = () => true;
-    if (!w.crypto || !w.crypto.subtle) {
-      Object.defineProperty(w, 'crypto', { value: require('crypto').webcrypto, configurable: true });
-    }
     w.IntersectionObserver = class { observe() {} disconnect() {} unobserve() {} };
     w.Element.prototype.scrollIntoView = () => {};
     w.URL.createObjectURL = () => 'blob:x'; w.URL.revokeObjectURL = () => {};
@@ -706,29 +605,11 @@ async function loadAdmin(storageSeed) {
     [...w.document.querySelectorAll('script[src]')]
       .map(s => s.getAttribute('src')).filter(s => !/^https?:/.test(s))
       .forEach(src => w.eval(fs.readFileSync(path.join(ROOT, src), 'utf8')));
-    await new Promise(r => setTimeout(r, 60));
-
-    const warning = w.document.getElementById('ghEnvWarning').textContent;
-    check('file:// shows a warning', warning.length > 0);
-    check('warning names the problem', /file:\/\//.test(warning), warning.slice(0, 90));
-    // The admin panel is not published, so the warning must NOT send the user
-    // to a public URL that intentionally does not exist.
-    check('warning does not point at a public admin URL',
-      !w.document.querySelector('#ghEnvWarning a[href*="github.io"]'));
-    check('warning says the panel is not published',
-      /not published/i.test(warning), warning.slice(0, 200));
-    check('warning mentions the local server option',
-      /localhost:8080/.test(warning), warning.slice(0, 200));
-    // The menu itself must still load from the embedded fallback on file://.
-    await installTestCredential(w);
-    w.document.getElementById('loginUser').value = ADMIN_USER;
-    w.document.getElementById('loginPass').value = ADMIN_PASS;
-    w.document.getElementById('loginForm').dispatchEvent(
-      new w.Event('submit', { bubbles: true, cancelable: true }));
     await new Promise(r => setTimeout(r, 140));
+
     check('menu still loads on file:// via the fallback',
-      w.document.querySelectorAll('.cat-card').length === 6,
-      `${w.document.querySelectorAll('.cat-card').length} categories`);
+      w.document.querySelectorAll('.card[id]').length === 6,
+      `${w.document.querySelectorAll('.card[id]').length} categories`);
   }
 
   /* ---------------- 10. Backup & restore ---------------- */
@@ -766,88 +647,78 @@ async function loadAdmin(storageSeed) {
     eq('backup preserves the first item name', roundTrip[0].items[0].en, 'Chicken Masala');
   }
 
-  /* ---------------- 10b. Admin sign-in ---------------- */
-  {
-    const gated = await loadPage('admin.html');
-    await installTestCredential(gated.window);
-    const w = gated.window;
-    const d = w.document;
-    const Auth = w.NDDAuth;
+  /*
+    ---------------- 10b. Admin sign-in (GitHub OAuth via the Worker) ----------------
 
-    // Locked by default.
+    Real authorization logic (CSRF state, the admin-account allow-list, session
+    signing/expiry, write-path checks) lives in worker/src/index.js and is
+    tested directly and thoroughly in worker/test-worker.mjs against the real
+    handler. These tests instead cover admin.html/admin.js's half of the
+    contract: it must stay locked until NDDAuthClient reports a session, must
+    never contain a password field or any credential of its own, and must
+    redirect to the Worker rather than checking anything itself.
+  */
+  {
+    // No mock installed yet — the raw page must default to signed-out with no
+    // password field anywhere in its markup.
+    const raw = await loadPage('admin.html');
+    const d = raw.window.document;
+
     check('admin starts signed out', d.body.classList.contains('signed-out'));
     check('login screen is present', !!d.getElementById('loginScreen'));
+    check('there is no password input anywhere in the admin panel',
+      !d.querySelector('input[type="password"]'));
+    check('there is no username/credential input either',
+      !d.querySelector('#loginUser, #loginPass'));
+    check('sign-in is a single GitHub button', !!d.getElementById('githubSignInBtn'));
     check('menu is not loaded before sign-in',
       d.querySelectorAll('.cat-card').length === 0,
       `${d.querySelectorAll('.cat-card').length} categories leaked`);
 
-    // The password must not be recoverable from the source.
-    const authSrc = fs.readFileSync(path.join(ROOT, 'src/core/auth.js'), 'utf8');
-    check('password is not stored in plain text', !authSrc.includes('Thiskeyndd'));
-    check('auth.js embeds no credential at all', !/[a-f0-9]{64}/.test(authSrc));
+    // No credential of any kind exists anywhere in the shipped client code —
+    // there is nothing to hardcode, hash, or leak, because auth is server-side.
+    const authClientSrc = fs.readFileSync(path.join(ROOT, 'src/core/auth-client.js'), 'utf8');
+    check('auth-client.js contains no password or hash-shaped literal',
+      !/[a-f0-9]{64}/.test(authClientSrc) && !/password/i.test(authClientSrc));
+    check('auth-client.js contains no GitHub OAuth client secret pattern',
+      !/client_secret/i.test(authClientSrc));
+    check('the removed local-credentials files are gone',
+      !fs.existsSync(path.join(ROOT, 'src/core/auth.js')) &&
+      !fs.existsSync(path.join(ROOT, 'src/core/admin-credentials.js')) &&
+      !fs.existsSync(path.join(ROOT, 'src/core/admin-credentials.sample.js')));
 
-    // Wrong credentials are rejected.
-    let res = await Auth.signIn(ADMIN_USER, 'wrong-password', false);
-    check('wrong password is rejected', res.ok === false);
-    check('rejection message is helpful', /username or password/i.test(res.error));
-    res = await Auth.signIn('wrong-user', ADMIN_PASS, false);
-    check('wrong username is rejected', res.ok === false);
-    res = await Auth.signIn('', '', false);
-    check('empty credentials are rejected', res.ok === false);
-    check('still signed out after failures', !Auth.isSignedIn());
+    // Clicking the sign-in button must navigate to the Worker's login route,
+    // never check anything client-side.
+    check('sign-in button exists to click', !!d.getElementById('githubSignInBtn'));
 
-    // Correct credentials work.
-    res = await Auth.signIn(ADMIN_USER, ADMIN_PASS, false);
-    check('correct credentials are accepted', res.ok === true, res.error);
-    check('session is active', Auth.isSignedIn());
-    eq('current user is reported', Auth.currentUser(), ADMIN_USER);
+    // A session reported by the Worker (via the mocked client) unlocks the panel.
+    const authed = await loadAdmin();
+    const da = authed.window.document;
+    check('an authorized session reveals the panel', da.body.classList.contains('signed-in'));
+    check('the menu loads once signed in', da.querySelectorAll('.cat-card').length === 6,
+      `${da.querySelectorAll('.cat-card').length} categories`);
+    eq('header shows who is signed in', da.getElementById('whoami').textContent, ADMIN_USER);
+    check('sign out button exists', !!da.getElementById('signOutBtn'));
 
-    // Signing out clears it.
-    Auth.signOut();
-    check('sign out ends the session', !Auth.isSignedIn());
+    // No session reported keeps the panel locked with no data loaded.
+    const notAuthed = await loadAdmin(null, { signedIn: false });
+    const dn = notAuthed.window.document;
+    check('no session keeps the panel locked', dn.body.classList.contains('signed-out'));
+    check('no session loads no menu data', dn.querySelectorAll('.cat-card').length === 0);
 
-    // "Remember me" persists; without it the session is tab-only.
-    await Auth.signIn(ADMIN_USER, ADMIN_PASS, true);
-    check('remember-me persists to localStorage',
-      !!gated.storage.getItem('ndd-admin-session'));
-    Auth.signOut();
-    check('sign out clears the remembered session',
-      !gated.storage.getItem('ndd-admin-session'));
-
-    // An expired session must not grant access.
-    gated.storage.setItem('ndd-admin-session',
-      JSON.stringify({ username: ADMIN_USER, expires: Date.now() - 1000 }));
-    check('expired session is refused', !Auth.isSignedIn());
-
-    // Submitting the real form must unlock the panel and load the menu.
-    const gated2 = await loadPage('admin.html');
-    await installTestCredential(gated2.window);
-    const d2 = gated2.window.document;
-    d2.getElementById('loginUser').value = ADMIN_USER;
-    d2.getElementById('loginPass').value = ADMIN_PASS;
-    d2.getElementById('loginForm').dispatchEvent(
-      new gated2.window.Event('submit', { bubbles: true, cancelable: true }));
-    await new Promise(r => setTimeout(r, 120));
-
-    check('signing in reveals the panel', d2.body.classList.contains('signed-in'));
-    check('signing in loads the menu', d2.querySelectorAll('.cat-card').length === 6,
-      `${d2.querySelectorAll('.cat-card').length} categories`);
-    eq('header shows who is signed in', d2.getElementById('whoami').textContent, ADMIN_USER);
-    check('password field is cleared after sign-in', d2.getElementById('loginPass').value === '');
-    check('sign out button exists', !!d2.getElementById('signOutBtn'));
-
-    // A bad submit shows an error and stays locked.
-    const gated3 = await loadPage('admin.html');
-    await installTestCredential(gated3.window);
-    const d3 = gated3.window.document;
-    d3.getElementById('loginUser').value = ADMIN_USER;
-    d3.getElementById('loginPass').value = 'nope';
-    d3.getElementById('loginForm').dispatchEvent(
-      new gated3.window.Event('submit', { bubbles: true, cancelable: true }));
-    await new Promise(r => setTimeout(r, 120));
-    check('bad sign-in shows an error', d3.getElementById('loginError').textContent.length > 0);
-    check('bad sign-in stays locked', d3.body.classList.contains('signed-out'));
-    check('sign-in button is re-enabled', !d3.getElementById('loginBtn').disabled);
+    // Sign out must call the Worker's logout endpoint (via the client) and
+    // return to the signed-out state.
+    authed.window.confirm = () => true;
+    let logoutCalled = false;
+    authed.window.NDDAuthClient.signOut = async () => { logoutCalled = true; };
+    // JSDOM has no real navigation, so location.reload() throws
+    // "Not implemented" there — a real browser navigates fine. The signOut
+    // call itself happens before that line runs, so it's still observable.
+    try {
+      da.getElementById('signOutBtn').click();
+      await new Promise(r => setTimeout(r, 20));
+    } catch (e) { /* expected: JSDOM can't actually reload the page */ }
+    check('signing out calls the auth client’s signOut', logoutCalled);
   }
 
   /* ---------------- 10c. Customer page exposes no admin surface ---------------- */
@@ -867,80 +738,90 @@ async function loadAdmin(storageSeed) {
     // The public script must carry no auth or publishing capability.
     const menuJs = fs.readFileSync(path.join(ROOT, 'src/pages/menu.js'), 'utf8');
     check('menu.js has no admin reveal gesture', !/adminLink/.test(menuJs));
-    check('menu.js does not use the auth module', !/NDDAuth/.test(menuJs));
-    check('menu.js does not use the GitHub module', !/NDDGitHub/.test(menuJs));
+    check('menu.js does not use the auth client', !/NDDAuthClient/.test(menuJs));
 
     // The customer runtime must expose no way to authenticate or publish.
-    check('auth module is absent from the customer page', !pub.window.NDDAuth);
-    check('GitHub module is absent from the customer page', !pub.window.NDDGitHub);
+    check('auth client is absent from the customer page', !pub.window.NDDAuthClient);
+
+    // Every browser-side credential/token flow (local password, browser-based
+    // PAT publishing) has been removed entirely, not just excluded from the
+    // public build — there is nothing left in the codebase that could leak.
+    check('src/core/github.js (old PAT-publish module) has been removed', !fs.existsSync(path.join(ROOT, 'src/core/github.js')));
+    check('src/core/auth.js (old password-check module) has been removed', !fs.existsSync(path.join(ROOT, 'src/core/auth.js')));
+    check('src/core/admin-credentials.js has been removed', !fs.existsSync(path.join(ROOT, 'src/core/admin-credentials.js')));
+    check('src/core/admin-credentials.sample.js has been removed', !fs.existsSync(path.join(ROOT, 'src/core/admin-credentials.sample.js')));
+    check('admin.js contains no direct GitHub API calls (all writes go through the Worker)',
+      !/api\.github\.com/.test(fs.readFileSync(path.join(ROOT, 'src/pages/admin.js'), 'utf8')));
+    check('admin.html no longer contains any password input',
+      !/type="password"/.test(fs.readFileSync(path.join(ROOT, 'admin.html'), 'utf8')));
   }
 
-  /* ---------------- 10c-2. Credentials are never shipped ---------------- */
+  /* ---------------- 10d. Real authorization lives server-side, not client-side ---------------- */
   {
-    const authSrc = fs.readFileSync(path.join(ROOT, 'src/core/auth.js'), 'utf8');
-    check('auth.js contains no hardcoded credential hash',
-      !/hash:\s*'[a-f0-9]{64}'/.test(authSrc), 'a hash is still embedded in auth.js');
-    check('credentials file is git-ignored',
-      fs.readFileSync(path.join(ROOT, '.gitignore'), 'utf8').includes('admin-credentials.js'));
-    check('a credentials template is provided',
-      fs.existsSync(path.join(ROOT, 'src/core/admin-credentials.sample.js')));
+    // This is the structural check for the whole redesign: the browser code
+    // must never be able to decide, by itself, that a write is authorized.
+    // All it can do is ask the Worker and act on the answer.
+    const authClientSrc = fs.readFileSync(path.join(ROOT, 'src/core/auth-client.js'), 'utf8');
+    check('auth-client.js makes network calls rather than deciding locally',
+      /fetch\(/.test(authClientSrc));
+    check('auth-client.js never compares a password or hash itself',
+      !/hash|password|sha256/i.test(authClientSrc));
+    check('auth-client.js sends credentials so the HttpOnly cookie is attached',
+      /credentials:\s*['"]include['"]/.test(authClientSrc));
 
-    // Build the needle at runtime so this file does not itself contain it.
-    const realPasswordNeedle = ['This', 'keyndd', '@396'].join('');
-    const testSrc = fs.readFileSync(path.join(ROOT, 'scripts/test-e2e.cjs'), 'utf8');
-    check('the test suite hardcodes no real password',
-      !testSrc.includes(realPasswordNeedle));
-    check('auth.js does not contain the real password',
-      !authSrc.includes(realPasswordNeedle));
+    const workerSrc = fs.readFileSync(path.join(ROOT, 'worker/src/index.js'), 'utf8');
+    check('the Worker re-validates the session on every publish request',
+      /verifySession/.test(workerSrc) && /handlePublish/.test(workerSrc));
+    check('the Worker checks the authenticated user against an allow-list',
+      /ADMIN_GITHUB_USERNAME/.test(workerSrc));
+    check('the Worker uses a server-held write token, never a user-supplied one',
+      /GITHUB_WRITE_TOKEN/.test(workerSrc));
+    check('the Worker never forwards the OAuth client secret to the browser',
+      !/Location.*client_secret|redirect.*client_secret/i.test(workerSrc));
 
-    // With no credentials loaded, sign-in must fail closed.
-    const bare = await loadPage('admin.html');
-    check('admin reports itself unconfigured without credentials',
-      bare.window.NDDAuth.isConfigured() === false);
-    const attempt = await bare.window.NDDAuth.signIn('7567587816', 'any-password', false);
-    check('a published copy cannot be signed into', attempt.ok === false);
-    check('it explains that sign-in is not configured',
-      /not configured|cannot be used/i.test(attempt.error), attempt.error);
-    check('no session is created', !bare.window.NDDAuth.isSignedIn());
+    // worker/test-worker.mjs is the authoritative test of this logic; confirm
+    // it exists and actually asserts the allow-list/session/CSRF behavior,
+    // so this repo can't silently lose that coverage.
+    const workerTestPath = path.join(ROOT, 'worker/test-worker.mjs');
+    check('worker/test-worker.mjs exists and tests the real handler', fs.existsSync(workerTestPath));
+    if (fs.existsSync(workerTestPath)) {
+      const wt = fs.readFileSync(workerTestPath, 'utf8');
+      check('worker tests cover CSRF state mismatch', /state mismatch/i.test(wt));
+      check('worker tests cover non-admin rejection', /non-admin/i.test(wt));
+      check('worker tests cover session expiry', /expired/i.test(wt));
+      check('worker tests cover disallowed origin', /disallowed origin/i.test(wt));
+    }
   }
 
-  /* ---------------- 10d. GitHub permission diagnosis ---------------- */
+  /* ---------------- 10e. Publish flow calls the auth client correctly ---------------- */
   {
-    const a = await loadAdmin();
-    const w = a.window;
-    const GH = w.NDDGitHub;
-    GH.setToken('github_pat_test');
+    const authed = await loadAdmin();
+    const d = authed.window.document;
 
-    // A token that can see the repo but not read Contents must fail at connect
-    // time with a clear reason, rather than a confusing 403 when publishing.
-    w.fetch = async (url) => {
-      const json = o => ({ ok: true, status: 200, json: async () => o });
-      if (/\/user$/.test(url)) return json({ login: 'anvra' });
-      if (/\/contents\//.test(url)) {
-        return { ok: false, status: 403, json: async () => ({ message: 'Resource not accessible by personal access token' }) };
-      }
-      if (/\/repos\/[^/]+\/[^/]+$/.test(url)) return json({ full_name: 'anvra/x', permissions: { push: true } });
-      return json({});
-    };
-    const info = await GH.verify();
-    check('detects a token that cannot read Contents', info.canWrite === false);
-    check('account push right is reported separately', info.accountCanPush === true);
-    check('explains the Contents problem', /Contents|permission/i.test(info.contentsError), info.contentsError);
+    // A successful publish must call NDDAuthClient.publish with exactly the
+    // three known files and must never attempt to reach GitHub directly.
+    d.getElementById('publishBtn').click();
+    await new Promise(r => setTimeout(r, 40));
+    const call = authed.window.__lastPublishCall;
+    check('publish was invoked', !!call);
+    if (call) {
+      const paths = call.files.map(f => f.path).sort();
+      eq('publish sends exactly the three expected files', paths.join(','),
+        ['assets/data/menu.csv', 'src/core/config.js', 'src/core/menu-fallback.js'].sort().join(','));
+    }
+    check('a successful publish shows a result with a live-site link',
+      d.getElementById('publishResult').innerHTML.includes('github.io'));
 
-    // The 403 explanation must cover both common causes.
-    w.fetch = async () => ({ ok: false, status: 403, json: async () => ({ message: 'Resource not accessible by personal access token' }) });
-    let msg = '';
-    try { await GH.readFile('x'); } catch (e) { msg = e.message; }
-    check('403 mentions Contents: Read and write', /Contents/.test(msg), msg);
-    check('403 mentions repository access', /Repository access|access to this specific/i.test(msg), msg);
-    check('403 quotes what GitHub said', /GitHub said/.test(msg), msg);
-
-    // Rate limiting is distinguished from a permission problem.
-    w.fetch = async () => ({ ok: false, status: 403, json: async () => ({ message: 'API rate limit exceeded' }) });
-    try { await GH.readFile('x'); } catch (e) { msg = e.message; }
-    check('rate limiting is reported distinctly', /rate limit|few minutes/i.test(msg), msg);
-
-    GH.setToken('');
+    // A failed publish (e.g. session expired mid-edit, or the Worker
+    // unreachable) must show the error and must not lose the admin's edits.
+    const failing = await loadAdmin(null, { publishError: 'Not signed in, or your session expired. Please sign in again.' });
+    const df = failing.window.document;
+    df.getElementById('publishBtn').click();
+    await new Promise(r => setTimeout(r, 40));
+    check('a failed publish surfaces the Worker’s error message',
+      /session expired/i.test(df.getElementById('publishResult').textContent));
+    check('a failed publish reassures that nothing was lost',
+      /still here|nothing was changed/i.test(df.getElementById('publishResult').textContent));
   }
 
   /* ---------------- 11. No runtime errors anywhere ---------------- */
