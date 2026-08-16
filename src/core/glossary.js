@@ -97,6 +97,13 @@
     'green tea':       { hi: 'ग्रीन टी',      gu: 'ગ્રીન ટી' },
     'masala tea':      { hi: 'मसाला चाय',     gu: 'મસાલા ચા' },
     'masala chai':     { hi: 'मसाला चाय',     gu: 'મસાલા ચા' },
+    
+    /* --- Disclaimers --- */
+    'prices are in indian rupees (₹). applicable taxes and service charges are additional unless otherwise stated.': {
+      hi: 'कीमतें भारतीय रुपये (₹) में हैं। लागू कर और सेवा शुल्क अतिरिक्त हैं जब तक कि अन्यथा न कहा गया हो।',
+      gu: 'કિંમતો ભારતીય રૂપિયા (₹) માં છે. લાગુ કર અને સેવા શુલ્ક વધારાના છે સિવાય કે અન્યથા જણાવ્યું હોય.'
+    },
+
 
     /* --- Descriptors & menu sections --- */
     'with bone':       { hi: 'हड्डी के साथ',  gu: 'હાડકાં સાથે' },
