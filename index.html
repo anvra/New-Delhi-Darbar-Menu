@@ -8,6 +8,7 @@
 <title>New Delhi Darbar — Menu</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="config.js"></script>
+<script src="menu-fallback.js"></script>
 <style>
    :root{
     --bg:#f5f2ed;
@@ -514,7 +515,11 @@
         header: true,
         skipEmptyLines: true,
         complete: res => resolve(rowsToCategories(res.data)),
-        error: () => resolve([])
+        error: () => {
+          // e.g. opened via file:// where fetch is blocked — use the embedded copy
+          if (window.NDD_MENU_CSV_FALLBACK) resolve(parseCsv(window.NDD_MENU_CSV_FALLBACK));
+          else resolve([]);
+        }
       });
     });
   }
