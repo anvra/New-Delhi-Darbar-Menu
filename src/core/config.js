@@ -9,7 +9,7 @@ window.NDD_CONFIG = {
     "tagline": "Restaurant",
     "since": "Serving Since 2001",
     "specialty": "Chokha na Rotla & Chokha na Pudaa Specialists",
-    "meta": "Bulk Orders Welcome • Authentic Taste • Consistent Quality",
+    "meta": "Bulk Orders Welcome • Authentic Taste • Quality You Can Count On",
     "phones": [
       "+91 75675 87816",
       "+91 97120 52249"
