@@ -10,13 +10,13 @@
   :root{
     --bg:#f5f2ed; --surface:#faf8f5; --surface-2:#ece8e2; --text:#1a1816;
     --muted:#6b6460; --line:#dad5cf; --accent:#e0824a; --accent-soft:#f0e4da;
-    --danger:#c0392b; --ok:#2e7d32; --radius:12px;
+    --danger:#c0392b; --ok:#2e7d32; --warn:#b8860b; --radius:12px;
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;line-height:1.45}
   a{color:var(--accent)}
-  .shell{max-width:1180px;margin:0 auto;padding:20px 16px 60px}
-  header{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .shell{max-width:980px;margin:0 auto;padding:20px 16px 80px}
+  header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
   header h1{font-size:16px;margin:0;letter-spacing:-.01em}
   header .sub{font-size:11px;color:var(--muted)}
   .btn{border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:9px;padding:9px 14px;font-size:12.5px;font-weight:650;cursor:pointer;transition:transform .15s,border-color .15s}
@@ -24,46 +24,70 @@
   .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
   .btn.danger{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 40%,var(--line))}
   .btn.small{padding:6px 10px;font-size:11.5px}
-  .toolrow{display:flex;gap:8px;flex-wrap:wrap}
+  .toolrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
   .status{font-size:12px;padding:6px 10px;border-radius:8px;display:none}
   .status.show{display:inline-block}
   .status.ok{background:color-mix(in srgb,var(--ok) 14%,var(--surface));color:var(--ok)}
-  section.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);margin:18px 0;padding:16px}
-  section.panel h2{font-size:14px;margin:0 0 12px;letter-spacing:.02em;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+
+  .tabs{display:flex;gap:6px;margin:18px 0 0;border-bottom:1px solid var(--line);overflow-x:auto}
+  .tab{padding:10px 14px;font-size:12.5px;font-weight:650;color:var(--muted);border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap}
+  .tab.active{color:var(--accent);border-color:var(--accent)}
+  .tabpage{display:none;padding-top:16px}
+  .tabpage.active{display:block}
+
+  section.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);margin:14px 0;padding:16px}
+  section.panel h2{font-size:14px;margin:0 0 4px;letter-spacing:.02em;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   @media(max-width:640px){.grid2{grid-template-columns:1fr}}
   label{display:block;font-size:11px;color:var(--muted);margin:8px 0 4px;font-weight:650;text-transform:uppercase;letter-spacing:.04em}
-  input[type=text],textarea,select{width:100%;border:1px solid var(--line);background:var(--bg);color:var(--text);border-radius:8px;padding:9px 10px;font-size:13px;font-family:inherit}
+  input[type=text],textarea{width:100%;border:1px solid var(--line);background:var(--bg);color:var(--text);border-radius:8px;padding:9px 10px;font-size:13.5px;font-family:inherit}
   textarea{resize:vertical;min-height:44px}
   .hint{font-size:11.5px;color:var(--muted);margin-top:4px}
-  .icon-btn{border:0;background:transparent;color:var(--danger);cursor:pointer;font-size:16px;padding:4px 8px}
-  .move-btn{border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:13px;padding:2px 6px}
+  .icon-btn{border:0;background:transparent;color:var(--danger);cursor:pointer;font-size:16px;padding:4px 8px;border-radius:6px}
+  .icon-btn:hover{background:color-mix(in srgb,var(--danger) 10%,transparent)}
+  .move-btn{border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:13px;padding:2px 6px;border-radius:6px}
+  .move-btn:hover{background:var(--surface-2)}
   code{background:var(--surface-2);padding:1px 5px;border-radius:5px;font-size:11px}
 
-  /* Excel-like table */
-  .table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
-  table{border-collapse:collapse;width:100%;min-width:1000px;font-size:12.5px}
-  thead th{position:sticky;top:0;background:var(--surface-2);text-align:left;padding:8px 8px;font-size:10.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);border-bottom:1px solid var(--line);white-space:nowrap}
-  tbody td{border-bottom:1px solid color-mix(in srgb,var(--line) 60%,transparent);padding:4px}
-  tbody tr:hover{background:color-mix(in srgb,var(--accent-soft) 30%,transparent)}
-  tbody input{border:1px solid transparent;background:transparent;border-radius:6px;padding:7px 8px;font-size:12.5px;width:100%}
-  tbody input:hover,tbody input:focus{border-color:var(--line);background:var(--bg);outline:none}
-  .row-num{color:var(--muted);text-align:center;font-variant-numeric:tabular-nums;width:34px}
-  .col-order{width:56px}
-  .col-id{width:110px}
-  .col-price{width:130px}
-  .col-actions{width:76px;white-space:nowrap}
+  .field-wrap{position:relative}
+  .suggest-chip{
+    display:inline-flex;align-items:center;gap:5px;margin-top:4px;font-size:11.5px;color:var(--warn);
+    background:color-mix(in srgb,var(--warn) 12%,var(--surface));border:1px solid color-mix(in srgb,var(--warn) 35%,var(--line));
+    border-radius:7px;padding:4px 8px;cursor:pointer;
+  }
+  .suggest-chip:hover{background:color-mix(in srgb,var(--warn) 20%,var(--surface))}
+  .suggest-chip b{font-weight:750}
+
+  .cat-card{border:1px solid var(--line);border-radius:12px;margin:12px 0;background:var(--surface-2);overflow:hidden}
+  .cat-card-head{display:flex;align-items:center;gap:8px;padding:12px 14px;background:color-mix(in srgb,var(--accent-soft) 35%,var(--surface-2))}
+  .cat-card-head .grow{flex:1;min-width:0}
+  .cat-card-head input{font-weight:700;font-size:14px}
+  .cat-count{font-size:11px;color:var(--muted);white-space:nowrap}
+  .cat-body{padding:6px 14px 14px}
+  .cat-langs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+  @media(max-width:640px){.cat-langs{grid-template-columns:1fr}}
+  .cat-langs label{margin:4px 0 2px}
+
+  .item-card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:8px 0}
+  .item-top{display:flex;align-items:center;gap:8px}
+  .item-top .grow{flex:1;min-width:0}
+  .item-langs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+  @media(max-width:640px){.item-langs{grid-template-columns:1fr}}
+  .item-price{width:150px;flex:0 0 auto}
+  @media(max-width:640px){ .item-top{flex-wrap:wrap} .item-price{width:100%} }
 
   .notice-block{border:1px solid var(--line);border-radius:10px;padding:12px;margin:10px 0;background:var(--surface-2)}
   .bulk-item{display:flex;gap:6px;margin:4px 0}
   .bulk-item input{flex:1}
+
+  .empty-state{text-align:center;padding:26px 10px;color:var(--muted);font-size:13px}
 </style>
 </head>
 <body>
 <header>
   <div>
     <h1>New Delhi Darbar — Admin Panel</h1>
-    <div class="sub">Edit menu items in an Excel-style table, or use a real Excel file — updates the live site instantly.</div>
+    <div class="sub">One place to manage everything on the menu site — updates reflect instantly.</div>
   </div>
   <div class="toolrow">
     <span class="status" id="status">Saved</span>
@@ -75,85 +99,76 @@
 
 <div class="shell">
   <div class="hint" style="margin-top:14px">
-    This is a static GitHub Pages site (no backend), so <strong>Save &amp; Publish</strong> stores your changes in this
-    browser and instantly updates <a href="index.html" target="_blank">index.html</a> here. To make the change
-    permanent on the live site for everyone, download <code>menu.csv</code> below (opens directly in Excel), edit it
-    there if you like, re-import it, then commit/push <code>menu.csv</code> (and <code>config.js</code> if you changed
-    brand/notices) to the repo.
+    This site is hosted on static GitHub Pages (no backend), so <strong>Save &amp; Publish</strong> stores your
+    changes in this browser and updates the live site here instantly. To make a change permanent for every visitor,
+    open <strong>Export</strong> below, download the two files, and commit/push them to the repo.
+    Spelling in English fields is checked automatically — a suggestion appears under any field with a likely typo;
+    click it to auto-correct.
   </div>
 
-  <section class="panel">
-    <h2>
-      Menu Items (Excel-style)
-      <span class="toolrow">
-        <button class="btn small" id="addRowBtn" type="button">+ Add Item Row</button>
-        <button class="btn small" id="downloadCsvBtn" type="button">⬇ Download menu.csv</button>
-        <label class="btn small" style="cursor:pointer">⬆ Import Excel/CSV<input type="file" id="importCsv" accept=".csv,.xlsx,.xls" style="display:none"></label>
-      </span>
-    </h2>
-    <div class="hint">
-      Editing here works just like a spreadsheet. You can also edit <code>menu.csv</code> directly in Microsoft
-      Excel (or Google Sheets) and re-import it with the button above. Rows sharing the same <b>Category ID</b> are
-      grouped into one menu section; <b>Category Order</b> controls section/nav order, <b>Item Order</b> controls
-      item order within a section.
-    </div>
-    <div class="table-wrap" style="margin-top:10px">
-      <table>
-        <thead>
-          <tr>
-            <th class="row-num">#</th>
-            <th class="col-order">Cat. Order</th>
-            <th class="col-id">Category ID</th>
-            <th>Category (EN)</th>
-            <th>Category (HI)</th>
-            <th>Category (GU)</th>
-            <th class="col-order">Item Order</th>
-            <th>Item (EN)</th>
-            <th>Item (HI)</th>
-            <th>Item (GU)</th>
-            <th class="col-price">Price</th>
-            <th class="col-actions">Actions</th>
-          </tr>
-        </thead>
-        <tbody id="rowsBody"></tbody>
-      </table>
-    </div>
-  </section>
+  <div class="tabs">
+    <div class="tab active" data-tab="menu">Menu</div>
+    <div class="tab" data-tab="brand">Brand &amp; Contact</div>
+    <div class="tab" data-tab="notices">Notices</div>
+    <div class="tab" data-tab="export">Export</div>
+  </div>
 
-  <section class="panel">
-    <h2>Brand &amp; Contact</h2>
-    <div class="grid2">
-      <div><label>Restaurant Name</label><input type="text" id="b_name"></div>
-      <div><label>Tagline</label><input type="text" id="b_tagline"></div>
-      <div><label>"Since" Chip</label><input type="text" id="b_since"></div>
-      <div><label>Specialty Chip</label><input type="text" id="b_specialty"></div>
-      <div style="grid-column:1/-1"><label>Meta Chip</label><input type="text" id="b_meta"></div>
-      <div><label>Phone 1</label><input type="text" id="b_phone1"></div>
-      <div><label>Phone 2</label><input type="text" id="b_phone2"></div>
-      <div style="grid-column:1/-1"><label>Address</label><input type="text" id="b_address"></div>
-      <div style="grid-column:1/-1"><label>Google Maps URL</label><input type="text" id="b_mapUrl"></div>
-    </div>
-    <label>Stock Note (English)</label><input type="text" id="b_stockEn">
-    <div class="grid2">
-      <div><label>Stock Note (Hindi)</label><input type="text" id="b_stockHi"></div>
-      <div><label>Stock Note (Gujarati)</label><input type="text" id="b_stockGu"></div>
-    </div>
-    <label>Source Note (English)</label><textarea id="b_sourceEn"></textarea>
-  </section>
+  <!-- MENU TAB -->
+  <div class="tabpage active" id="page-menu">
+    <section class="panel">
+      <h2>Menu Categories &amp; Items <button class="btn small" id="addCatBtn" type="button">+ Add Category</button></h2>
+      <div class="hint">Category order below = navigation menu order on the live site. Use ↑ ↓ to reorder categories and items.</div>
+      <div id="catList"></div>
+      <div class="empty-state" id="catEmpty" style="display:none">No categories yet. Click "+ Add Category" to start.</div>
+    </section>
+  </div>
 
-  <section class="panel">
-    <h2>Notices <button class="btn small" id="addNoticeBtn" type="button">+ Add Notice</button></h2>
-    <div id="noticeList"></div>
-  </section>
+  <!-- BRAND TAB -->
+  <div class="tabpage" id="page-brand">
+    <section class="panel">
+      <h2>Brand &amp; Contact</h2>
+      <div class="grid2">
+        <div class="field-wrap"><label>Restaurant Name</label><input type="text" id="b_name" spellcheck="true" lang="en"></div>
+        <div class="field-wrap"><label>Tagline</label><input type="text" id="b_tagline" spellcheck="true" lang="en"></div>
+        <div class="field-wrap"><label>"Since" Chip</label><input type="text" id="b_since" spellcheck="true" lang="en"></div>
+        <div class="field-wrap"><label>Specialty Chip</label><input type="text" id="b_specialty" spellcheck="true" lang="en"></div>
+        <div class="field-wrap" style="grid-column:1/-1"><label>Meta Chip</label><input type="text" id="b_meta" spellcheck="true" lang="en"></div>
+        <div><label>Phone 1</label><input type="text" id="b_phone1"></div>
+        <div><label>Phone 2</label><input type="text" id="b_phone2"></div>
+        <div class="field-wrap" style="grid-column:1/-1"><label>Address</label><input type="text" id="b_address" spellcheck="true" lang="en"></div>
+        <div style="grid-column:1/-1"><label>Google Maps URL</label><input type="text" id="b_mapUrl"></div>
+      </div>
+      <div class="field-wrap"><label>Stock Note (English)</label><input type="text" id="b_stockEn" spellcheck="true" lang="en"></div>
+      <div class="grid2">
+        <div><label>Stock Note (Hindi)</label><input type="text" id="b_stockHi"></div>
+        <div><label>Stock Note (Gujarati)</label><input type="text" id="b_stockGu"></div>
+      </div>
+      <div class="field-wrap"><label>Source Note (English)</label><textarea id="b_sourceEn" spellcheck="true" lang="en"></textarea></div>
+    </section>
+  </div>
 
-  <section class="panel">
-    <h2>Export</h2>
-    <div class="toolrow">
-      <button class="btn" id="downloadCsvBtn2" type="button">Download menu.csv</button>
-      <button class="btn" id="downloadConfigBtn" type="button">Download config.js</button>
-    </div>
-    <div class="hint">Commit both downloaded files to the repo root and push to GitHub Pages to make changes permanent for all visitors.</div>
-  </section>
+  <!-- NOTICES TAB -->
+  <div class="tabpage" id="page-notices">
+    <section class="panel">
+      <h2>Notices <button class="btn small" id="addNoticeBtn" type="button">+ Add Notice</button></h2>
+      <div id="noticeList"></div>
+    </section>
+  </div>
+
+  <!-- EXPORT TAB -->
+  <div class="tabpage" id="page-export">
+    <section class="panel">
+      <h2>Export &amp; Publish</h2>
+      <div class="toolrow">
+        <button class="btn" id="downloadCsvBtn" type="button">⬇ Download menu.csv</button>
+        <button class="btn" id="downloadConfigBtn" type="button">⬇ Download config.js</button>
+      </div>
+      <div class="hint">
+        Replace <code>menu.csv</code> and <code>config.js</code> in the repo with these downloads, commit, and push —
+        GitHub Pages will publish the update for everyone within a minute.
+      </div>
+    </section>
+  </div>
 </div>
 
 <script>
@@ -169,6 +184,107 @@
     setTimeout(() => statusEl.classList.remove('show'), 2200);
   }
 
+  function esc(s){ return String(s == null ? '' : s).replace(/"/g,'&quot;'); }
+  function uid(){ return 'cat' + Math.random().toString(36).slice(2, 8); }
+
+  // ---------------- Spell-check / suggestion engine ----------------
+  // Curated dictionary: common English words + every menu/domain term already used on the site.
+  const BASE_WORDS = ("the a an of for and or with without in on at to from is are was were be been being "+
+    "restaurant menu item items price plate pc piece pieces per note notes special order orders bulk quantity "+
+    "quantities fresh fried fry gravy dry masala kadai tikka biryani rice roti plain bread water mineral cold "+
+    "beverages beverage soft drink drinks chicken mutton fish prawn prawns kheema kebab jeera address phone "+
+    "since serving welcome authentic taste consistent quality preparation prepared according requirement "+
+    "requirements customized customised advance please large even same remains pricing information tax service "+
+    "charge stated source supplied preserved wording no yes also we accept your you our and please place").split(/\s+/);
+
+  const KNOWN_WORDS = new Set(BASE_WORDS.map(w => w.toLowerCase()));
+
+  function collectDomainWords(){
+    // Pull every English word currently in use across categories/items so correctly-spelled
+    // menu-specific names (e.g. "Kadai", "Biryani") are never flagged once entered once.
+    document.querySelectorAll('[data-en-source]').forEach(() => {});
+  }
+
+  function levenshtein(a, b){
+    const m = a.length, n = b.length;
+    const dp = Array.from({length: m+1}, () => new Array(n+1).fill(0));
+    for (let i=0;i<=m;i++) dp[i][0]=i;
+    for (let j=0;j<=n;j++) dp[0][j]=j;
+    for (let i=1;i<=m;i++){
+      for (let j=1;j<=n;j++){
+        dp[i][j] = a[i-1]===b[j-1] ? dp[i-1][j-1] : 1+Math.min(dp[i-1][j-1],dp[i-1][j],dp[i][j-1]);
+      }
+    }
+    return dp[m][n];
+  }
+
+  function suggestWord(word){
+    const w = word.toLowerCase();
+    if (!w || KNOWN_WORDS.has(w) || w.length < 3 || /[0-9]/.test(w)) return null;
+    let best = null, bestDist = Infinity;
+    KNOWN_WORDS.forEach(k => {
+      if (Math.abs(k.length - w.length) > 2) return;
+      const d = levenshtein(w, k);
+      if (d < bestDist) { bestDist = d; best = k; }
+    });
+    if (best && bestDist > 0 && bestDist <= 2) return best;
+    return null;
+  }
+
+  function capitalizeLike(original, suggestion){
+    if (original[0] && original[0] === original[0].toUpperCase()) {
+      return suggestion.charAt(0).toUpperCase() + suggestion.slice(1);
+    }
+    return suggestion;
+  }
+
+  function checkSpelling(input){
+    const wrap = input.closest('.field-wrap');
+    if (!wrap) return;
+    let chip = wrap.querySelector('.suggest-chip');
+    const text = input.value;
+    const words = text.split(/([^A-Za-z']+)/); // keep separators for rebuild
+    let foundOriginal = null, foundSuggestion = null;
+    for (const token of words) {
+      if (!/^[A-Za-z']+$/.test(token)) continue;
+      const sug = suggestWord(token);
+      if (sug) { foundOriginal = token; foundSuggestion = capitalizeLike(token, sug); break; }
+    }
+    if (chip) chip.remove();
+    if (foundOriginal) {
+      chip = document.createElement('div');
+      chip.className = 'suggest-chip';
+      chip.innerHTML = `✎ Did you mean <b>${foundSuggestion}</b> instead of "${foundOriginal}"?`;
+      chip.addEventListener('click', () => {
+        input.value = text.replace(new RegExp('\\b' + foundOriginal + '\\b'), foundSuggestion);
+        input.dispatchEvent(new Event('input'));
+        chip.remove();
+      });
+      wrap.appendChild(chip);
+    }
+  }
+
+  function wireSpellcheck(input){
+    if (input.dataset.spellWired) return;
+    input.dataset.spellWired = '1';
+    input.addEventListener('blur', () => checkSpelling(input));
+  }
+
+  function wireAllSpellcheck(root){
+    root.querySelectorAll('.field-wrap input[type=text], .field-wrap textarea').forEach(wireSpellcheck);
+  }
+
+  // ---------------- Tabs ----------------
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tabpage').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('page-' + tab.dataset.tab).classList.add('active');
+    });
+  });
+
+  // ---------------- Data load/save ----------------
   function loadConfig(){
     try {
       const raw = localStorage.getItem(STORAGE_CONFIG);
@@ -178,34 +294,61 @@
   }
 
   let config = loadConfig();
-  let rows = [];
+  let categories = []; // [{ id, order, name:{en,hi,gu}, items:[{order,en,hi,gu,price}] }]
 
-  function rowsToCsv(){
-    return Papa.unparse({ fields: COLS, data: rows.map(r => COLS.map(c => r[c] ?? '')) });
-  }
-  function csvToRows(text){
-    const res = Papa.parse(text, { header: true, skipEmptyLines: true });
-    return res.data.map(r => {
-      const o = {};
-      COLS.forEach(c => o[c] = r[c] ?? '');
-      return o;
+  function rowsFromCategories(){
+    const rows = [];
+    categories.forEach((c, ci) => {
+      if (!c.items.length) {
+        rows.push({ category_order: ci+1, category_id: c.id, category_en: c.name.en, category_hi: c.name.hi, category_gu: c.name.gu, item_order:'', item_en:'', item_hi:'', item_gu:'', price:'' });
+        return;
+      }
+      c.items.forEach((it, ii) => {
+        rows.push({
+          category_order: ci+1, category_id: c.id, category_en: c.name.en, category_hi: c.name.hi, category_gu: c.name.gu,
+          item_order: ii+1, item_en: it.en, item_hi: it.hi, item_gu: it.gu, price: it.price
+        });
+      });
     });
+    return rows;
   }
 
-  function loadRows(){
+  function categoriesFromRows(rows){
+    const byId = new Map();
+    rows.forEach(r => {
+      const id = (r.category_id || '').trim();
+      if (!id) return;
+      if (!byId.has(id)) {
+        byId.set(id, { id, order: Number(r.category_order)||0, name:{en:r.category_en||'',hi:r.category_hi||'',gu:r.category_gu||''}, items: [] });
+      }
+      const en = (r.item_en || '').trim();
+      if (!en) return;
+      byId.get(id).items.push({ order: Number(r.item_order)||0, en, hi:r.item_hi||'', gu:r.item_gu||'', price:r.price||'' });
+    });
+    const cats = [...byId.values()];
+    cats.forEach(c => c.items.sort((a,b)=>a.order-b.order));
+    cats.sort((a,b)=>a.order-b.order);
+    return cats;
+  }
+
+  function loadCategories(){
     try {
       const raw = localStorage.getItem(STORAGE_CSV);
-      if (raw) { rows = csvToRows(raw); return; }
+      if (raw) {
+        const res = Papa.parse(raw, { header:true, skipEmptyLines:true });
+        categories = categoriesFromRows(res.data);
+        renderCategories();
+        return;
+      }
     } catch(e){}
-    // fall back to fetching the shipped menu.csv (works when served over http)
     Papa.parse('menu.csv', {
       download: true, header: true, skipEmptyLines: true,
-      complete: res => { rows = res.data.map(r => { const o={}; COLS.forEach(c=>o[c]=r[c]??''); return o; }); renderTable(); },
-      error: () => { rows = []; renderTable(); }
+      complete: res => { categories = categoriesFromRows(res.data); renderCategories(); },
+      error: () => { categories = []; renderCategories(); }
     });
   }
 
-  // ---------- Brand fields ----------
+  // ---------------- Brand form ----------------
   function fillBrandForm(){
     const b = config.brand;
     document.getElementById('b_name').value = b.name || '';
@@ -221,6 +364,7 @@
     document.getElementById('b_stockHi').value = (b.stockNote || {}).hi || '';
     document.getElementById('b_stockGu').value = (b.stockNote || {}).gu || '';
     document.getElementById('b_sourceEn').value = (b.sourceNote || {}).en || '';
+    wireAllSpellcheck(document.getElementById('page-brand'));
   }
 
   function readBrandForm(){
@@ -243,64 +387,105 @@
     b.sourceNote.en = document.getElementById('b_sourceEn').value;
   }
 
-  // ---------- Table (menu items) ----------
-  function renderTable(){
-    const body = document.getElementById('rowsBody');
-    body.innerHTML = '';
-    rows.forEach((r, i) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td class="row-num">${i + 1}</td>
-        <td><input type="text" data-c="category_order" value="${esc(r.category_order)}"></td>
-        <td><input type="text" data-c="category_id" value="${esc(r.category_id)}"></td>
-        <td><input type="text" data-c="category_en" value="${esc(r.category_en)}"></td>
-        <td><input type="text" data-c="category_hi" value="${esc(r.category_hi)}"></td>
-        <td><input type="text" data-c="category_gu" value="${esc(r.category_gu)}"></td>
-        <td><input type="text" data-c="item_order" value="${esc(r.item_order)}"></td>
-        <td><input type="text" data-c="item_en" value="${esc(r.item_en)}"></td>
-        <td><input type="text" data-c="item_hi" value="${esc(r.item_hi)}"></td>
-        <td><input type="text" data-c="item_gu" value="${esc(r.item_gu)}"></td>
-        <td><input type="text" data-c="price" value="${esc(r.price)}"></td>
-        <td class="col-actions">
-          <button class="move-btn" data-act="up" title="Move up">↑</button>
-          <button class="move-btn" data-act="down" title="Move down">↓</button>
-          <button class="icon-btn" data-act="delete" title="Delete row">✕</button>
-        </td>`;
-      body.appendChild(tr);
-      tr.querySelectorAll('input').forEach(inp => {
-        inp.addEventListener('input', () => { r[inp.dataset.c] = inp.value; });
+  // ---------------- Categories & items UI ----------------
+  function renderCategories(){
+    const list = document.getElementById('catList');
+    list.innerHTML = '';
+    document.getElementById('catEmpty').style.display = categories.length ? 'none' : 'block';
+
+    categories.forEach((cat, ci) => {
+      const card = document.createElement('div');
+      card.className = 'cat-card';
+      card.innerHTML = `
+        <div class="cat-card-head">
+          <button class="move-btn" data-act="up" title="Move category up">↑</button>
+          <button class="move-btn" data-act="down" title="Move category down">↓</button>
+          <div class="grow field-wrap">
+            <input type="text" data-f="name_en" value="${esc(cat.name.en)}" placeholder="Category name (English)" spellcheck="true" lang="en">
+          </div>
+          <span class="cat-count">${cat.items.length} item${cat.items.length===1?'':'s'}</span>
+          <button class="icon-btn" data-act="delete" title="Delete category">✕</button>
+        </div>
+        <div class="cat-body">
+          <div class="cat-langs">
+            <div><label>Name (Hindi)</label><input type="text" data-f="name_hi" value="${esc(cat.name.hi)}"></div>
+            <div><label>Name (Gujarati)</label><input type="text" data-f="name_gu" value="${esc(cat.name.gu)}"></div>
+          </div>
+          <div class="items-holder"></div>
+          <button class="btn small" data-act="addItem">+ Add Item</button>
+        </div>`;
+      list.appendChild(card);
+
+      card.querySelector('[data-f=name_en]').addEventListener('input', e => cat.name.en = e.target.value);
+      card.querySelector('[data-f=name_hi]').addEventListener('input', e => cat.name.hi = e.target.value);
+      card.querySelector('[data-f=name_gu]').addEventListener('input', e => cat.name.gu = e.target.value);
+      card.querySelector('[data-act=up]').addEventListener('click', () => moveCategory(ci, -1));
+      card.querySelector('[data-act=down]').addEventListener('click', () => moveCategory(ci, 1));
+      card.querySelector('[data-act=delete]').addEventListener('click', () => {
+        if (confirm(`Delete category "${cat.name.en}" and all its items?`)) { categories.splice(ci,1); renderCategories(); }
       });
-      tr.querySelector('[data-act=delete]').addEventListener('click', () => {
-        rows.splice(i, 1); renderTable();
+
+      const itemsHolder = card.querySelector('.items-holder');
+      const countEl = card.querySelector('.cat-count');
+      function renderItems(){
+        itemsHolder.innerHTML = '';
+        cat.items.forEach((it, ii) => {
+          const row = document.createElement('div');
+          row.className = 'item-card';
+          row.innerHTML = `
+            <div class="item-top">
+              <button class="move-btn" data-act="up" title="Move item up">↑</button>
+              <button class="move-btn" data-act="down" title="Move item down">↓</button>
+              <div class="grow field-wrap"><input type="text" data-f="en" value="${esc(it.en)}" placeholder="Item name (English)" spellcheck="true" lang="en"></div>
+              <div class="item-price"><input type="text" data-f="price" value="${esc(it.price)}" placeholder="Price (e.g. 80 Rs / plate)"></div>
+              <button class="icon-btn" data-act="delete" title="Delete item">✕</button>
+            </div>
+            <div class="item-langs">
+              <input type="text" data-f="hi" value="${esc(it.hi)}" placeholder="Hindi name">
+              <input type="text" data-f="gu" value="${esc(it.gu)}" placeholder="Gujarati name">
+            </div>`;
+          itemsHolder.appendChild(row);
+          row.querySelectorAll('input').forEach(inp => {
+            inp.addEventListener('input', () => { it[inp.dataset.f] = inp.value; });
+          });
+          row.querySelector('[data-act=delete]').addEventListener('click', () => {
+            cat.items.splice(ii,1); renderItems();
+            countEl.textContent = cat.items.length + (cat.items.length===1?' item':' items');
+          });
+          row.querySelector('[data-act=up]').addEventListener('click', () => {
+            if (ii===0) return; [cat.items[ii-1],cat.items[ii]]=[cat.items[ii],cat.items[ii-1]]; renderItems();
+          });
+          row.querySelector('[data-act=down]').addEventListener('click', () => {
+            if (ii===cat.items.length-1) return; [cat.items[ii+1],cat.items[ii]]=[cat.items[ii],cat.items[ii+1]]; renderItems();
+          });
+          wireAllSpellcheck(row);
+        });
+      }
+      renderItems();
+
+      card.querySelector('[data-act=addItem]').addEventListener('click', () => {
+        cat.items.push({ en:'', hi:'', gu:'', price:'' });
+        renderItems();
+        countEl.textContent = cat.items.length + (cat.items.length===1?' item':' items');
       });
-      tr.querySelector('[data-act=up]').addEventListener('click', () => {
-        if (i === 0) return;
-        [rows[i-1], rows[i]] = [rows[i], rows[i-1]]; renderTable();
-      });
-      tr.querySelector('[data-act=down]').addEventListener('click', () => {
-        if (i === rows.length - 1) return;
-        [rows[i+1], rows[i]] = [rows[i], rows[i+1]]; renderTable();
-      });
+
+      wireAllSpellcheck(card);
     });
   }
 
-  function esc(s){ return String(s == null ? '' : s).replace(/"/g,'&quot;'); }
+  function moveCategory(index, dir){
+    const newIndex = index + dir;
+    if (newIndex < 0 || newIndex >= categories.length) return;
+    [categories[index], categories[newIndex]] = [categories[newIndex], categories[index]];
+    renderCategories();
+  }
 
-  document.getElementById('addRowBtn').addEventListener('click', () => {
-    const last = rows[rows.length - 1];
-    rows.push({
-      category_order: last ? last.category_order : String(rows.length + 1),
-      category_id: last ? last.category_id : '',
-      category_en: last ? last.category_en : '',
-      category_hi: last ? last.category_hi : '',
-      category_gu: last ? last.category_gu : '',
-      item_order: last ? String((Number(last.item_order)||0) + 1) : '1',
-      item_en: '', item_hi: '', item_gu: '', price: ''
-    });
-    renderTable();
+  document.getElementById('addCatBtn').addEventListener('click', () => {
+    categories.push({ id: uid(), name:{en:'New Category',hi:'',gu:''}, items: [] });
+    renderCategories();
   });
 
-  // ---------- Notices ----------
+  // ---------------- Notices ----------------
   function renderNotices(){
     const list = document.getElementById('noticeList');
     list.innerHTML = '';
@@ -312,12 +497,11 @@
           <strong class="hint">Notice ${ni+1}</strong>
           <button class="icon-btn" data-act="delete">✕ Delete</button>
         </div>
-        <label>Title (English)</label><input type="text" data-f="title_en" value="${esc(n.title.en||'')}">
-        <label>Body HTML (English)</label><textarea data-f="html_en">${n.html.en||''}</textarea>
+        <div class="field-wrap"><label>Title (English)</label><input type="text" data-f="title_en" value="${esc(n.title.en||'')}" spellcheck="true" lang="en"></div>
+        <div class="field-wrap"><label>Body HTML (English)</label><textarea data-f="html_en" spellcheck="true" lang="en">${n.html.en||''}</textarea></div>
         <div class="bulk-holder"></div>
         <button class="btn small" data-act="addBulk">+ Add bulk-list line</button>
-        <label style="margin-top:10px">Bulk Pricing Note (English, optional)</label>
-        <textarea data-f="bulkPricing_en">${(n.bulkPricing||{}).en||''}</textarea>`;
+        <div class="field-wrap"><label style="margin-top:10px">Bulk Pricing Note (English, optional)</label><textarea data-f="bulkPricing_en" spellcheck="true" lang="en">${(n.bulkPricing||{}).en||''}</textarea></div>`;
       list.appendChild(block);
 
       block.querySelector('[data-act=delete]').addEventListener('click', () => {
@@ -333,7 +517,7 @@
         (n.bulkList||[]).forEach((b, bi) => {
           const row = document.createElement('div');
           row.className = 'bulk-item';
-          row.innerHTML = `<input type="text" placeholder="English" value="${esc(b.en||'')}"><button class="icon-btn">✕</button>`;
+          row.innerHTML = `<input type="text" placeholder="English" value="${esc(b.en||'')}" spellcheck="true" lang="en"><button class="icon-btn">✕</button>`;
           bulkHolder.appendChild(row);
           row.querySelector('input').addEventListener('input', e => { b.en = e.target.value; });
           row.querySelector('button').addEventListener('click', () => { n.bulkList.splice(bi,1); renderBulk(); });
@@ -345,6 +529,7 @@
         n.bulkList.push({ en:'', hi:'', gu:'' });
         renderBulk();
       });
+      wireAllSpellcheck(block);
     });
   }
 
@@ -354,11 +539,11 @@
     renderNotices();
   });
 
-  // ---------- Save / Reset / Export ----------
+  // ---------------- Save / Reset / Export ----------------
   function save(){
     readBrandForm();
     localStorage.setItem(STORAGE_CONFIG, JSON.stringify(config));
-    localStorage.setItem(STORAGE_CSV, rowsToCsv());
+    localStorage.setItem(STORAGE_CSV, Papa.unparse({ fields: COLS, data: rowsFromCategories().map(r => COLS.map(c => r[c] ?? '')) }));
     showStatus('Saved — live site updated', true);
   }
   document.getElementById('saveBtn').addEventListener('click', save);
@@ -368,8 +553,7 @@
     localStorage.removeItem(STORAGE_CONFIG);
     localStorage.removeItem(STORAGE_CSV);
     config = JSON.parse(JSON.stringify(window.NDD_CONFIG));
-    fillBrandForm(); renderNotices();
-    loadRows();
+    fillBrandForm(); renderNotices(); loadCategories();
     showStatus('Reset to defaults', true);
   });
 
@@ -384,9 +568,9 @@
     URL.revokeObjectURL(url);
   }
 
-  function downloadCsv(){ download('menu.csv', rowsToCsv(), 'text/csv'); }
-  document.getElementById('downloadCsvBtn').addEventListener('click', downloadCsv);
-  document.getElementById('downloadCsvBtn2').addEventListener('click', downloadCsv);
+  document.getElementById('downloadCsvBtn').addEventListener('click', () => {
+    download('menu.csv', Papa.unparse({ fields: COLS, data: rowsFromCategories().map(r => COLS.map(c => r[c] ?? '')) }), 'text/csv');
+  });
 
   document.getElementById('downloadConfigBtn').addEventListener('click', () => {
     readBrandForm();
@@ -394,28 +578,9 @@
     download('config.js', text);
   });
 
-  document.getElementById('importCsv').addEventListener('change', e => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const name = file.name.toLowerCase();
-    if (name.endsWith('.xlsx') || name.endsWith('.xls')) {
-      alert('Please save the Excel file as CSV (File → Save As → CSV) before importing, or edit menu.csv directly — this page reads CSV text.');
-      e.target.value = '';
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      rows = csvToRows(reader.result);
-      renderTable();
-      showStatus('Imported — click Save & Publish to apply', true);
-    };
-    reader.readAsText(file);
-    e.target.value = '';
-  });
-
   fillBrandForm();
   renderNotices();
-  loadRows();
+  loadCategories();
 })();
 </script>
 </body>
