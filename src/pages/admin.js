@@ -294,13 +294,13 @@
     $('b_phone1').value = (b.phones || [])[0] || '';
     $('b_phone2').value = (b.phones || [])[1] || '';
     $('b_stockEn').value = (b.stockNote || {}).en || '';
-    $('b_sourceEn').value = (b.sourceNote || {}).en || '';
+    $('b_pricingDisclaimerEn').value = (b.pricingDisclaimer || {}).en || '';
 
     // Translation previews for the two multilingual brand notes.
     b.stockNote = b.stockNote || { en: '', hi: '', gu: '' };
-    b.sourceNote = b.sourceNote || { en: '', hi: '', gu: '' };
+    b.pricingDisclaimer = b.pricingDisclaimer || { en: '', hi: '', gu: '' };
     mountPreview('stockNotePreview', b.stockNote);
-    mountPreview('sourceNotePreview', b.sourceNote);
+    mountPreview('pricingDisclaimerPreview', b.pricingDisclaimer);
     wireSpellcheck($('page-brand'));
   }
 
@@ -317,8 +317,8 @@
     b.phones = [$('b_phone1').value.trim(), $('b_phone2').value.trim()].filter(Boolean);
     b.stockNote = b.stockNote || {};
     b.stockNote.en = $('b_stockEn').value.trim();
-    b.sourceNote = b.sourceNote || {};
-    b.sourceNote.en = $('b_sourceEn').value.trim();
+    b.pricingDisclaimer = b.pricingDisclaimer || {};
+    b.pricingDisclaimer.en = $('b_pricingDisclaimerEn').value.trim();
   }
 
   /* ---------------- categories & items ---------------- */

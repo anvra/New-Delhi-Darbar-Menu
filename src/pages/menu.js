@@ -160,8 +160,8 @@
     });
     const stockEl = document.getElementById('stockNote');
     if (stockEl) stockEl.textContent = text(DATA.brand.stockNote);
-    const sourceEl = document.getElementById('sourceNote');
-    if (sourceEl) sourceEl.textContent = text(DATA.brand.sourceNote);
+    const disclaimerEl = document.getElementById('pricingDisclaimer');
+    if (disclaimerEl) disclaimerEl.textContent = text(DATA.brand.pricingDisclaimer);
     const langHeader = document.getElementById('langMenuHeader');
     if (langHeader) langHeader.textContent = i18n.t(currentLang, 'languageLabel');
     const lastUpdEl = document.getElementById('lastUpdatedNote');

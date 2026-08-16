@@ -18,8 +18,7 @@
       themeToDark: 'Switch to dark theme',
       menuCategories: 'Menu categories',
       highlights: 'Restaurant highlights',
-      notes: 'Restaurant notes',
-      pricingDisclaimer: 'Prices are in Indian Rupees (₹). Applicable taxes and service charges are additional unless otherwise stated.'
+      notes: 'Restaurant notes'
     },
     hi: {
       restaurant: 'रेस्टोरेंट',
@@ -30,8 +29,7 @@
       themeToDark: 'डार्क थीम पर जाएँ',
       menuCategories: 'मेनू श्रेणियाँ',
       highlights: 'रेस्टोरेंट की विशेषताएँ',
-      notes: 'रेस्टोरेंट सूचनाएँ',
-      pricingDisclaimer: 'कीमतें भारतीय रुपये (₹) में हैं। लागू कर और सेवा शुल्क अतिरिक्त हैं जब तक कि अन्यथा न कहा गया हो।'
+      notes: 'रेस्टोरेंट सूचनाएँ'
     },
     gu: {
       restaurant: 'રેસ્ટોરન્ટ',
@@ -42,8 +40,7 @@
       themeToDark: 'ડાર્ક થીમ પર જાઓ',
       menuCategories: 'મેનૂ શ્રેણીઓ',
       highlights: 'રેસ્ટોરન્ટની વિશેષતાઓ',
-      notes: 'રેસ્ટોરન્ટ સૂચનાઓ',
-      pricingDisclaimer: 'કિંમતો ભારતીય રૂપિયા (₹) માં છે. લાગુ કર અને સેવા શુલ્ક વધારાના છે સિવાય કે અન્યથા જણાવ્યું હોય.'
+      notes: 'રેસ્ટોરન્ટ સૂચનાઓ'
     }
   };
 
