@@ -163,7 +163,16 @@
       const raw = localStorage.getItem(STORAGE_CONFIG);
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (parsed && parsed.brand) return parsed;
+        if (parsed && parsed.brand) {
+          // Migration: convert string fields to {en,hi,gu} objects
+          const multi = ['tagline', 'since', 'specialty', 'meta', 'address'];
+          multi.forEach(f => {
+            if (typeof parsed.brand[f] === 'string') {
+              parsed.brand[f] = { en: parsed.brand[f], hi: '', gu: '' };
+            }
+          });
+          return parsed;
+        }
       }
     } catch (e) { /* corrupt override — fall back to the shipped config */ }
     return JSON.parse(JSON.stringify(root.NDD_CONFIG || { brand: {}, notices: [] }));

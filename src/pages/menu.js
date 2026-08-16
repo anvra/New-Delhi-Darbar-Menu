@@ -63,15 +63,15 @@
     };
 
     setText('brandName', b.name);
-    setText('brandTagline', b.tagline);
+    setText('brandTagline', text(b.tagline));
     setText('brandH1', b.name);
 
     const strip = document.getElementById('brandStrip');
     if (strip) {
       const chips = [];
-      if (b.since) chips.push(`<span class="tag-chip primary">${escapeHtml(b.since)}</span>`);
-      if (b.specialty) chips.push(`<span class="tag-chip specialty">${escapeHtml(b.specialty)}</span>`);
-      if (b.meta) chips.push(`<span class="tag-chip meta">${escapeHtml(b.meta)}</span>`);
+      if (b.since && b.since.en) chips.push(`<span class="tag-chip primary">${escapeHtml(text(b.since))}</span>`);
+      if (b.specialty && b.specialty.en) chips.push(`<span class="tag-chip specialty">${escapeHtml(text(b.specialty))}</span>`);
+      if (b.meta && b.meta.en) chips.push(`<span class="tag-chip meta">${escapeHtml(text(b.meta))}</span>`);
       strip.innerHTML = chips.join('');
     }
 
@@ -86,7 +86,7 @@
 
     const addressLink = document.getElementById('addressLink');
     const addressText = document.getElementById('addressText');
-    if (addressText) addressText.textContent = b.address || '';
+    if (addressText) addressText.textContent = text(b.address) || '';
     if (addressLink) {
       if (b.mapUrl) {
         addressLink.href = b.mapUrl;

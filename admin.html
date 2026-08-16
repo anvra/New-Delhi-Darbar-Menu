@@ -115,13 +115,28 @@
       <h2>Brand &amp; Contact</h2>
       <div class="grid2">
         <div class="field-wrap"><label for="b_name">Restaurant Name</label><input type="text" id="b_name" spellcheck="true" lang="en"></div>
-        <div class="field-wrap"><label for="b_tagline">Tagline</label><input type="text" id="b_tagline" spellcheck="true" lang="en"></div>
-        <div class="field-wrap"><label for="b_since">“Since” Badge</label><input type="text" id="b_since" spellcheck="true" lang="en"></div>
-        <div class="field-wrap"><label for="b_specialty">Specialty Badge</label><input type="text" id="b_specialty" spellcheck="true" lang="en"></div>
-        <div class="field-wrap" style="grid-column:1/-1"><label for="b_meta">Highlights Badge</label><input type="text" id="b_meta" spellcheck="true" lang="en"></div>
+        <div class="field-wrap">
+          <label for="b_taglineEn">Tagline (English)</label><input type="text" id="b_taglineEn" spellcheck="true" lang="en">
+          <div id="taglinePreview"></div>
+        </div>
+        <div class="field-wrap">
+          <label for="b_sinceEn">“Since” Badge (English)</label><input type="text" id="b_sinceEn" spellcheck="true" lang="en">
+          <div id="sincePreview"></div>
+        </div>
+        <div class="field-wrap">
+          <label for="b_specialtyEn">Specialty Badge (English)</label><input type="text" id="b_specialtyEn" spellcheck="true" lang="en">
+          <div id="specialtyPreview"></div>
+        </div>
+        <div class="field-wrap" style="grid-column:1/-1">
+          <label for="b_metaEn">Highlights Badge (English)</label><input type="text" id="b_metaEn" spellcheck="true" lang="en">
+          <div id="metaPreview"></div>
+        </div>
         <div><label for="b_phone1">Phone 1</label><input type="text" id="b_phone1" inputmode="tel"></div>
         <div><label for="b_phone2">Phone 2</label><input type="text" id="b_phone2" inputmode="tel"></div>
-        <div class="field-wrap" style="grid-column:1/-1"><label for="b_address">Address</label><input type="text" id="b_address" spellcheck="true" lang="en"></div>
+        <div class="field-wrap" style="grid-column:1/-1">
+          <label for="b_addressEn">Address (English)</label><input type="text" id="b_addressEn" spellcheck="true" lang="en">
+          <div id="addressPreview"></div>
+        </div>
         <div style="grid-column:1/-1"><label for="b_mapUrl">Google Maps Link</label><input type="text" id="b_mapUrl" inputmode="url" placeholder="https://maps.app.goo.gl/…"></div>
       </div>
     </section>

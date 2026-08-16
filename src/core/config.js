@@ -6,15 +6,35 @@
 window.NDD_CONFIG = {
   "brand": {
     "name": "New Delhi Darbar",
-    "tagline": "Restaurant",
-    "since": "Serving Since 2001",
-    "specialty": "Chokha na Rotla & Chokha na Pudaa Specialists",
-    "meta": "Bulk Orders Welcome • Authentic Taste • Quality You Can Count On",
+    "tagline": {
+      "en": "Restaurant",
+      "hi": "",
+      "gu": ""
+    },
+    "since": {
+      "en": "Serving Since 2001",
+      "hi": "",
+      "gu": ""
+    },
+    "specialty": {
+      "en": "Chokha na Rotla & Chokha na Pudaa Specialists",
+      "hi": "",
+      "gu": ""
+    },
+    "meta": {
+      "en": "Bulk Orders Welcome • Authentic Taste • Quality You Can Count On",
+      "hi": "",
+      "gu": ""
+    },
     "phones": [
       "+91 75675 87816",
       "+91 97120 52249"
     ],
-    "address": "Opp. Masjid, Nana Taiwad, Valsad. 396001",
+    "address": {
+      "en": "Opp. Masjid, Nana Taiwad, Valsad. 396001",
+      "hi": "",
+      "gu": ""
+    },
     "mapUrl": "https://maps.app.goo.gl/PcJ4x3PgARtX2wjEA",
     "stockNote": {
       "en": "Please note: Items are served subject to availability. Thank you for your understanding.",

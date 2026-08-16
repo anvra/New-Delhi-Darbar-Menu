@@ -286,11 +286,23 @@
 
   /* ---------------- brand form ---------------- */
 
-  const BRAND_FIELDS = ['name', 'tagline', 'since', 'specialty', 'meta', 'address', 'mapUrl'];
+  const BRAND_FIELDS = ['name', 'mapUrl'];
+  const BRAND_MULTI = ['tagline', 'since', 'specialty', 'meta', 'address'];
 
   function fillBrandForm() {
     const b = data.brand;
     BRAND_FIELDS.forEach(f => { const el = $('b_' + f); if (el) el.value = b[f] || ''; });
+    
+    BRAND_MULTI.forEach(f => {
+      b[f] = b[f] || { en: '', hi: '', gu: '' };
+      // Fallback for migration: if the field is still a string in localStorage, convert it
+      if (typeof b[f] === 'string') { b[f] = { en: b[f], hi: '', gu: '' }; }
+      
+      const el = $('b_' + f + 'En');
+      if (el) el.value = b[f].en || '';
+      mountPreview(f + 'Preview', b[f]);
+    });
+
     $('b_phone1').value = (b.phones || [])[0] || '';
     $('b_phone2').value = (b.phones || [])[1] || '';
     $('b_stockEn').value = (b.stockNote || {}).en || '';
@@ -314,6 +326,11 @@
   function readBrandForm() {
     const b = data.brand;
     BRAND_FIELDS.forEach(f => { const el = $('b_' + f); if (el) b[f] = el.value.trim(); });
+    BRAND_MULTI.forEach(f => {
+      b[f] = b[f] || {};
+      const el = $('b_' + f + 'En');
+      if (el) b[f].en = el.value.trim();
+    });
     b.phones = [$('b_phone1').value.trim(), $('b_phone2').value.trim()].filter(Boolean);
     b.stockNote = b.stockNote || {};
     b.stockNote.en = $('b_stockEn').value.trim();
