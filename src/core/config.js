@@ -1,8 +1,11 @@
 /*
   New Delhi Darbar — brand info & notices.
-  Menu categories/items live in menu.csv (open & edit in Excel).
-  Edit this file's contents via admin.html (Admin Panel) — changes there
-  update both this data and menu.csv, and both pages reflect it automatically.
+
+  Menu categories/items live in assets/data/menu.csv.
+  Edit everything through the Admin Panel (admin.html), then use its Publish
+  tab to re-export this file. English is the source of truth; the `hi`/`gu`
+  fields below are OPTIONAL manual overrides — leave them empty to let the
+  shared glossary (src/core/glossary.js) derive the translation automatically.
 */
 window.NDD_CONFIG = {
   brand: {
@@ -15,14 +18,14 @@ window.NDD_CONFIG = {
     address: "Opp. Masjid, Nana Taiwad, Valsad. 396001",
     mapUrl: "https://maps.app.goo.gl/PcJ4x3PgARtX2wjEA",
     stockNote: {
-      en: "Note: Whatever is in the stock will be served.",
-      hi: "नोट: स्टॉक में जो उपलब्ध होगा, वही परोसा जाएगा।",
-      gu: "નોંધ: સ્ટોકમાં જે ઉપલબ્ધ હશે તે જ પીરસવામાં આવશે."
+      en: "Please note: items are served subject to availability.",
+      hi: "कृपया ध्यान दें: उपलब्धता के अनुसार ही व्यंजन परोसे जाएंगे।",
+      gu: "કૃપા કરીને નોંધો: ઉપલબ્ધતા મુજબ જ વાનગીઓ પીરસવામાં આવશે."
     },
     sourceNote: {
-      en: "Prices and menu wording are preserved from the supplied menu. No tax or service-charge information is stated in the source.",
-      hi: "कीमतें और मेनू की मूल जानकारी दिए गए मेनू के अनुसार रखी गई हैं। स्रोत में टैक्स या सर्विस चार्ज की जानकारी नहीं दी गई है।",
-      gu: "કિંમતો અને મેનૂની મૂળ માહિતી આપેલા મેનૂ મુજબ જ રાખવામાં આવી છે. સ્રોતમાં ટેક્સ અથવા સર્વિસ ચાર્જની માહિતી દર્શાવેલી નથી."
+      en: "All prices are in Indian Rupees. Taxes and service charges are not included unless stated otherwise.",
+      hi: "सभी कीमतें भारतीय रुपये में हैं। जब तक अलग से न बताया जाए, इनमें टैक्स और सर्विस चार्ज शामिल नहीं हैं।",
+      gu: "બધી કિંમતો ભારતીય રૂપિયામાં છે. જ્યાં સુધી અલગથી જણાવવામાં ન આવે ત્યાં સુધી તેમાં ટેક્સ અને સર્વિસ ચાર્જ સામેલ નથી."
     }
   },
 

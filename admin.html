@@ -3,208 +3,119 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>New Delhi Darbar — Admin Panel</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-<script src="config.js"></script>
-<script src="menu-fallback.js"></script>
-<style>
-  :root{
-    --bg:#f5f2ed; --surface:#faf8f5; --surface-2:#ece8e2; --text:#1a1816;
-    --muted:#6b6460; --line:#dad5cf; --accent:#e0824a; --accent-soft:#f0e4da;
-    --danger:#c0392b; --ok:#2e7d32; --warn:#b8860b; --radius:12px;
-  }
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;line-height:1.45}
-  a{color:var(--accent)}
-  .shell{max-width:980px;margin:0 auto;padding:20px 16px 80px}
-  header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-  header h1{font-size:16px;margin:0;letter-spacing:-.01em}
-  header .sub{font-size:11px;color:var(--muted)}
-  .btn{border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:9px;padding:9px 14px;font-size:12.5px;font-weight:650;cursor:pointer;transition:transform .15s,border-color .15s}
-  .btn:hover{border-color:var(--accent);transform:translateY(-1px)}
-  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
-  .btn.danger{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 40%,var(--line))}
-  .btn.small{padding:6px 10px;font-size:11.5px}
-  .toolrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-  .status{font-size:12px;padding:6px 10px;border-radius:8px;display:none}
-  .status.show{display:inline-block}
-  .status.ok{background:color-mix(in srgb,var(--ok) 14%,var(--surface));color:var(--ok)}
-
-  .tabs{display:flex;gap:6px;margin:18px 0 0;border-bottom:1px solid var(--line);overflow-x:auto}
-  .tab{padding:10px 14px;font-size:12.5px;font-weight:650;color:var(--muted);border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap}
-  .tab.active{color:var(--accent);border-color:var(--accent)}
-  .tabpage{display:none;padding-top:16px}
-  .tabpage.active{display:block}
-
-  section.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);margin:14px 0;padding:16px}
-  section.panel h2{font-size:14px;margin:0 0 4px;letter-spacing:.02em;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  @media(max-width:640px){.grid2{grid-template-columns:1fr}}
-  label{display:block;font-size:11px;color:var(--muted);margin:8px 0 4px;font-weight:650;text-transform:uppercase;letter-spacing:.04em}
-  input[type=text],textarea{width:100%;border:1px solid var(--line);background:var(--bg);color:var(--text);border-radius:8px;padding:9px 10px;font-size:13.5px;font-family:inherit}
-  textarea{resize:vertical;min-height:44px}
-  .hint{font-size:11.5px;color:var(--muted);margin-top:4px}
-  .icon-btn{border:0;background:transparent;color:var(--danger);cursor:pointer;font-size:16px;padding:4px 8px;border-radius:6px}
-  .icon-btn:hover{background:color-mix(in srgb,var(--danger) 10%,transparent)}
-  .move-btn{border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:13px;padding:2px 6px;border-radius:6px}
-  .move-btn:hover{background:var(--surface-2)}
-  code{background:var(--surface-2);padding:1px 5px;border-radius:5px;font-size:11px}
-
-  .field-wrap{position:relative}
-  .suggest-chip{
-    display:inline-flex;align-items:center;gap:5px;margin-top:4px;font-size:11.5px;color:var(--warn);
-    background:color-mix(in srgb,var(--warn) 12%,var(--surface));border:1px solid color-mix(in srgb,var(--warn) 35%,var(--line));
-    border-radius:7px;padding:4px 8px;cursor:pointer;
-  }
-  .suggest-chip:hover{background:color-mix(in srgb,var(--warn) 20%,var(--surface))}
-  .suggest-chip b{font-weight:750}
-
-  .cat-card{border:1px solid var(--line);border-radius:12px;margin:12px 0;background:var(--surface-2);overflow:hidden}
-  .cat-card-head{display:flex;align-items:center;gap:8px;padding:12px 14px;background:color-mix(in srgb,var(--accent-soft) 35%,var(--surface-2))}
-  .cat-card-head .grow{flex:1;min-width:0}
-  .cat-card-head input{font-weight:700;font-size:14px}
-  .cat-count{font-size:11px;color:var(--muted);white-space:nowrap}
-  .cat-body{padding:6px 14px 14px}
-  .cat-langs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
-  @media(max-width:640px){.cat-langs{grid-template-columns:1fr}}
-  .cat-langs label{margin:4px 0 2px}
-
-  .item-card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:8px 0}
-  .item-top{display:flex;align-items:center;gap:8px}
-  .item-top .grow{flex:1;min-width:0}
-  .item-langs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
-  @media(max-width:640px){.item-langs{grid-template-columns:1fr}}
-  .item-price{width:150px;flex:0 0 auto}
-  @media(max-width:640px){ .item-top{flex-wrap:wrap} .item-price{width:100%} }
-
-  .notice-block{border:1px solid var(--line);border-radius:10px;padding:12px;margin:10px 0;background:var(--surface-2)}
-  .bulk-item{display:flex;gap:6px;margin:4px 0}
-  .bulk-item input{flex:1}
-
-  .empty-state{text-align:center;padding:26px 10px;color:var(--muted);font-size:13px}
-
-  .save-fab{
-    position:fixed; right:20px; bottom:20px; z-index:50;
-    display:inline-flex; align-items:center; gap:9px;
-    background:var(--accent); color:#fff; border:0; border-radius:999px;
-    padding:15px 22px; font-size:14px; font-weight:750; letter-spacing:.01em;
-    box-shadow:0 12px 30px color-mix(in srgb, var(--accent) 40%, transparent), 0 2px 6px rgba(0,0,0,.15);
-    cursor:pointer; transition:transform .15s ease, box-shadow .15s ease;
-  }
-  .save-fab:hover{transform:translateY(-2px) scale(1.02)}
-  .save-fab:active{transform:translateY(0) scale(.98)}
-  .save-fab .sync-icon{width:19px;height:19px;flex:0 0 auto;transition:transform .5s ease}
-  .save-fab.spinning .sync-icon{animation:ndd-spin .6s linear}
-  @keyframes ndd-spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
-  .save-fab .dot{
-    width:9px;height:9px;border-radius:50%;background:#fff2;
-    box-shadow:0 0 0 0 rgba(255,255,255,.6);
-  }
-  .save-fab.dirty .dot{
-    background:#fff; animation:ndd-pulse 1.4s ease-in-out infinite;
-  }
-  @keyframes ndd-pulse{
-    0%{box-shadow:0 0 0 0 rgba(255,255,255,.65)}
-    70%{box-shadow:0 0 0 9px rgba(255,255,255,0)}
-    100%{box-shadow:0 0 0 0 rgba(255,255,255,0)}
-  }
-  @media(max-width:640px){
-    .save-fab{right:14px;bottom:14px;padding:13px 18px;font-size:13px}
-  }
-</style>
+<meta name="robots" content="noindex, nofollow">
+<title>Admin Panel — New Delhi Darbar</title>
+<link rel="icon" type="image/png" href="assets/img/favicon-light.png">
+<link rel="stylesheet" href="src/pages/admin.css">
 </head>
 <body>
 <header>
   <div>
     <h1>New Delhi Darbar — Admin Panel</h1>
-    <div class="sub">One place to manage everything on the menu site — updates reflect instantly.</div>
+    <div class="sub">Manage the whole menu site from one place. Type in English; Hindi and Gujarati update automatically.</div>
   </div>
   <div class="toolrow">
-    <span class="status" id="status">Saved</span>
+    <span class="status" id="status" role="status" aria-live="polite">Saved</span>
     <button class="btn" id="viewSiteBtn" type="button">View Site ↗</button>
-    <button class="btn danger" id="resetBtn" type="button">Reset to Defaults</button>
+    <button class="btn danger" id="resetBtn" type="button">Discard Changes</button>
     <button class="btn primary" id="saveBtn" type="button">Save &amp; Publish</button>
   </div>
 </header>
 
 <div class="shell" id="appShell">
   <div class="hint" style="margin-top:14px">
-    This site is hosted on static GitHub Pages (no backend), so <strong>Save &amp; Publish</strong> stores your
-    changes in this browser and updates the live site here instantly. To make a change permanent for every visitor,
-    open <strong>Export</strong> below, download the two files, and commit/push them to the repo.
-    Spelling in English fields is checked automatically — a suggestion appears under any field with a likely typo;
-    click it to auto-correct.
+    <strong>How this works:</strong> enter every item in <strong>English only</strong> — Hindi and Gujarati are
+    filled in automatically from a shared glossary, so you never type the same dish three times. Each field shows
+    its translation status, and you can override any single translation by hand when you want different wording.
+    <strong>Save &amp; Publish</strong> updates the menu on this device immediately; to publish for all customers,
+    use the <strong>Publish</strong> tab and commit the downloaded files to the repository.
   </div>
 
-  <div class="tabs">
-    <div class="tab active" data-tab="menu">Menu</div>
-    <div class="tab" data-tab="brand">Brand &amp; Contact</div>
-    <div class="tab" data-tab="notices">Notices</div>
-    <div class="tab" data-tab="export">Export</div>
+  <div class="tabs" role="tablist">
+    <button class="tab active" data-tab="menu" role="tab" aria-selected="true" type="button">Menu</button>
+    <button class="tab" data-tab="brand" role="tab" aria-selected="false" type="button">Brand &amp; Contact</button>
+    <button class="tab" data-tab="notices" role="tab" aria-selected="false" type="button">Notices</button>
+    <button class="tab" data-tab="publish" role="tab" aria-selected="false" type="button">Publish</button>
   </div>
 
-  <!-- MENU TAB -->
-  <div class="tabpage active" id="page-menu">
+  <!-- MENU -->
+  <div class="tabpage active" id="page-menu" role="tabpanel">
     <section class="panel">
-      <h2>Menu Categories &amp; Items <button class="btn small" id="addCatBtn" type="button">+ Add Category</button></h2>
-      <div class="hint">Category order below = navigation menu order on the live site. Use ↑ ↓ to reorder categories and items.</div>
+      <h2>Menu Categories &amp; Items
+        <button class="btn small" id="addCatBtn" type="button">+ Add Category</button>
+      </h2>
+      <div class="hint">The order below is exactly the order customers see, including the navigation bar. Use ↑ ↓ to rearrange.</div>
+      <div class="tsummary" id="tsummary"></div>
       <div id="catList"></div>
-      <div class="empty-state" id="catEmpty" style="display:none">No categories yet. Click "+ Add Category" to start.</div>
+      <div class="empty-state" id="catEmpty" style="display:none">No categories yet. Click “+ Add Category” to start.</div>
     </section>
   </div>
 
-  <!-- BRAND TAB -->
-  <div class="tabpage" id="page-brand">
+  <!-- BRAND -->
+  <div class="tabpage" id="page-brand" role="tabpanel">
     <section class="panel">
       <h2>Brand &amp; Contact</h2>
       <div class="grid2">
-        <div class="field-wrap"><label>Restaurant Name</label><input type="text" id="b_name" spellcheck="true" lang="en"></div>
-        <div class="field-wrap"><label>Tagline</label><input type="text" id="b_tagline" spellcheck="true" lang="en"></div>
-        <div class="field-wrap"><label>"Since" Chip</label><input type="text" id="b_since" spellcheck="true" lang="en"></div>
-        <div class="field-wrap"><label>Specialty Chip</label><input type="text" id="b_specialty" spellcheck="true" lang="en"></div>
-        <div class="field-wrap" style="grid-column:1/-1"><label>Meta Chip</label><input type="text" id="b_meta" spellcheck="true" lang="en"></div>
-        <div><label>Phone 1</label><input type="text" id="b_phone1"></div>
-        <div><label>Phone 2</label><input type="text" id="b_phone2"></div>
-        <div class="field-wrap" style="grid-column:1/-1"><label>Address</label><input type="text" id="b_address" spellcheck="true" lang="en"></div>
-        <div style="grid-column:1/-1"><label>Google Maps URL</label><input type="text" id="b_mapUrl"></div>
+        <div class="field-wrap"><label for="b_name">Restaurant Name</label><input type="text" id="b_name" spellcheck="true" lang="en"></div>
+        <div class="field-wrap"><label for="b_tagline">Tagline</label><input type="text" id="b_tagline" spellcheck="true" lang="en"></div>
+        <div class="field-wrap"><label for="b_since">“Since” Badge</label><input type="text" id="b_since" spellcheck="true" lang="en"></div>
+        <div class="field-wrap"><label for="b_specialty">Specialty Badge</label><input type="text" id="b_specialty" spellcheck="true" lang="en"></div>
+        <div class="field-wrap" style="grid-column:1/-1"><label for="b_meta">Highlights Badge</label><input type="text" id="b_meta" spellcheck="true" lang="en"></div>
+        <div><label for="b_phone1">Phone 1</label><input type="text" id="b_phone1" inputmode="tel"></div>
+        <div><label for="b_phone2">Phone 2</label><input type="text" id="b_phone2" inputmode="tel"></div>
+        <div class="field-wrap" style="grid-column:1/-1"><label for="b_address">Address</label><input type="text" id="b_address" spellcheck="true" lang="en"></div>
+        <div style="grid-column:1/-1"><label for="b_mapUrl">Google Maps Link</label><input type="text" id="b_mapUrl" inputmode="url" placeholder="https://maps.app.goo.gl/…"></div>
       </div>
-      <div class="field-wrap"><label>Stock Note (English)</label><input type="text" id="b_stockEn" spellcheck="true" lang="en"></div>
-      <div class="grid2">
-        <div><label>Stock Note (Hindi)</label><input type="text" id="b_stockHi"></div>
-        <div><label>Stock Note (Gujarati)</label><input type="text" id="b_stockGu"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Menu Notes</h2>
+      <div class="field-wrap"><label for="b_stockEn">Stock Note (English)</label>
+        <input type="text" id="b_stockEn" spellcheck="true" lang="en">
+        <div class="hint">Shown in bold above the menu.</div>
       </div>
-      <div class="field-wrap"><label>Source Note (English)</label><textarea id="b_sourceEn" spellcheck="true" lang="en"></textarea></div>
+      <div id="stockNotePreview"></div>
+
+      <div class="field-wrap" style="margin-top:14px"><label for="b_sourceEn">Footer Note (English)</label>
+        <textarea id="b_sourceEn" spellcheck="true" lang="en"></textarea>
+      </div>
+      <div id="sourceNotePreview"></div>
     </section>
   </div>
 
-  <!-- NOTICES TAB -->
-  <div class="tabpage" id="page-notices">
+  <!-- NOTICES -->
+  <div class="tabpage" id="page-notices" role="tabpanel">
     <section class="panel">
       <h2>Notices <button class="btn small" id="addNoticeBtn" type="button">+ Add Notice</button></h2>
+      <div class="hint">These highlighted boxes appear after the menu categories.</div>
       <div id="noticeList"></div>
     </section>
   </div>
 
-  <!-- EXPORT TAB -->
-  <div class="tabpage" id="page-export">
+  <!-- PUBLISH -->
+  <div class="tabpage" id="page-publish" role="tabpanel">
     <section class="panel">
-      <h2>Export &amp; Publish</h2>
-      <div class="toolrow">
-        <button class="btn" id="downloadCsvBtn" type="button">⬇ Download menu.csv</button>
-        <button class="btn" id="downloadFallbackBtn" type="button">⬇ Download menu-fallback.js</button>
-        <button class="btn" id="downloadConfigBtn" type="button">⬇ Download config.js</button>
-      </div>
+      <h2>Publish to All Customers</h2>
       <div class="hint">
-        Replace <code>menu.csv</code>, <code>menu-fallback.js</code>, and <code>config.js</code> in the repo with
-        these downloads, commit, and push — GitHub Pages will publish the update for everyone within a minute.
-        <code>menu-fallback.js</code> is a backup copy used only if a browser opens these pages as a local file
-        instead of over the web, so keep it in sync whenever the menu changes.
+        Saving stores your changes on this device only. To update the public website, download these three files
+        and replace them in the repository, then commit and push — GitHub Pages republishes within a minute.
+      </div>
+      <ol class="hint" style="line-height:1.9;margin-top:10px">
+        <li>Download all three files below.</li>
+        <li>Put <code>menu.csv</code> into <code>assets/data/</code>.</li>
+        <li>Put <code>menu-fallback.js</code> and <code>config.js</code> into <code>src/core/</code>.</li>
+        <li>Commit and push the changes.</li>
+      </ol>
+      <div class="toolrow" style="margin-top:12px">
+        <button class="btn primary" id="downloadCsvBtn" type="button">⬇ menu.csv</button>
+        <button class="btn" id="downloadFallbackBtn" type="button">⬇ menu-fallback.js</button>
+        <button class="btn" id="downloadConfigBtn" type="button">⬇ config.js</button>
       </div>
     </section>
   </div>
 </div>
 
-<button class="save-fab" id="saveFab" type="button" title="Save & Publish (updates the live site instantly)">
+<button class="save-fab" id="saveFab" type="button" title="Save and publish your changes">
   <svg class="sync-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
     <path d="M21 12a9 9 0 0 1-15.3 6.4L3 15"/><path d="M3 12a9 9 0 0 1 15.3-6.4L21 9"/>
     <path d="M3 21v-6h6"/><path d="M21 3v6h-6"/>
@@ -213,469 +124,12 @@
   <span class="dot" id="fabDot"></span>
 </button>
 
-<script>
-(() => {
-  const STORAGE_CONFIG = 'ndd-config-override';
-  const STORAGE_CSV = 'ndd-csv-override';
-  const COLS = ['category_order','category_id','category_en','category_hi','category_gu','item_order','item_en','item_hi','item_gu','price'];
-
-  const statusEl = document.getElementById('status');
-  function showStatus(msg, ok){
-    statusEl.textContent = msg;
-    statusEl.className = 'status show' + (ok ? ' ok' : '');
-    setTimeout(() => statusEl.classList.remove('show'), 2200);
-  }
-
-  function esc(s){ return String(s == null ? '' : s).replace(/"/g,'&quot;'); }
-  function uid(){ return 'cat' + Math.random().toString(36).slice(2, 8); }
-
-  // ---------------- Spell-check / suggestion engine ----------------
-  // Curated dictionary: common English words + every menu/domain term already used on the site.
-  const BASE_WORDS = ("the a an of for and or with without in on at to from is are was were be been being "+
-    "restaurant menu item items price plate pc piece pieces per note notes special order orders bulk quantity "+
-    "quantities fresh fried fry gravy dry masala kadai tikka biryani rice roti plain bread water mineral cold "+
-    "beverages beverage soft drink drinks chicken mutton fish prawn prawns kheema kebab jeera address phone "+
-    "since serving welcome authentic taste consistent quality preparation prepared according requirement "+
-    "requirements customized customised advance please large even same remains pricing information tax service "+
-    "charge stated source supplied preserved wording no yes also we accept your you our and please place").split(/\s+/);
-
-  const KNOWN_WORDS = new Set(BASE_WORDS.map(w => w.toLowerCase()));
-
-  function collectDomainWords(){
-    // Pull every English word currently in use across categories/items so correctly-spelled
-    // menu-specific names (e.g. "Kadai", "Biryani") are never flagged once entered once.
-    document.querySelectorAll('[data-en-source]').forEach(() => {});
-  }
-
-  function levenshtein(a, b){
-    const m = a.length, n = b.length;
-    const dp = Array.from({length: m+1}, () => new Array(n+1).fill(0));
-    for (let i=0;i<=m;i++) dp[i][0]=i;
-    for (let j=0;j<=n;j++) dp[0][j]=j;
-    for (let i=1;i<=m;i++){
-      for (let j=1;j<=n;j++){
-        dp[i][j] = a[i-1]===b[j-1] ? dp[i-1][j-1] : 1+Math.min(dp[i-1][j-1],dp[i-1][j],dp[i][j-1]);
-      }
-    }
-    return dp[m][n];
-  }
-
-  function suggestWord(word){
-    const w = word.toLowerCase();
-    if (!w || KNOWN_WORDS.has(w) || w.length < 3 || /[0-9]/.test(w)) return null;
-    let best = null, bestDist = Infinity;
-    KNOWN_WORDS.forEach(k => {
-      if (Math.abs(k.length - w.length) > 2) return;
-      const d = levenshtein(w, k);
-      if (d < bestDist) { bestDist = d; best = k; }
-    });
-    if (best && bestDist > 0 && bestDist <= 2) return best;
-    return null;
-  }
-
-  function capitalizeLike(original, suggestion){
-    if (original[0] && original[0] === original[0].toUpperCase()) {
-      return suggestion.charAt(0).toUpperCase() + suggestion.slice(1);
-    }
-    return suggestion;
-  }
-
-  function checkSpelling(input){
-    const wrap = input.closest('.field-wrap');
-    if (!wrap) return;
-    let chip = wrap.querySelector('.suggest-chip');
-    const text = input.value;
-    const words = text.split(/([^A-Za-z']+)/); // keep separators for rebuild
-    let foundOriginal = null, foundSuggestion = null;
-    for (const token of words) {
-      if (!/^[A-Za-z']+$/.test(token)) continue;
-      const sug = suggestWord(token);
-      if (sug) { foundOriginal = token; foundSuggestion = capitalizeLike(token, sug); break; }
-    }
-    if (chip) chip.remove();
-    if (foundOriginal) {
-      chip = document.createElement('div');
-      chip.className = 'suggest-chip';
-      chip.innerHTML = `✎ Did you mean <b>${foundSuggestion}</b> instead of "${foundOriginal}"?`;
-      chip.addEventListener('click', () => {
-        input.value = text.replace(new RegExp('\\b' + foundOriginal + '\\b'), foundSuggestion);
-        input.dispatchEvent(new Event('input'));
-        chip.remove();
-      });
-      wrap.appendChild(chip);
-    }
-  }
-
-  function wireSpellcheck(input){
-    if (input.dataset.spellWired) return;
-    input.dataset.spellWired = '1';
-    input.addEventListener('blur', () => checkSpelling(input));
-  }
-
-  function wireAllSpellcheck(root){
-    root.querySelectorAll('.field-wrap input[type=text], .field-wrap textarea').forEach(wireSpellcheck);
-  }
-
-  // ---------------- Tabs ----------------
-  document.querySelectorAll('.tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.tabpage').forEach(p => p.classList.remove('active'));
-      tab.classList.add('active');
-      document.getElementById('page-' + tab.dataset.tab).classList.add('active');
-    });
-  });
-
-  // ---------------- Data load/save ----------------
-  function loadConfig(){
-    try {
-      const raw = localStorage.getItem(STORAGE_CONFIG);
-      if (raw) return JSON.parse(raw);
-    } catch(e){}
-    return JSON.parse(JSON.stringify(window.NDD_CONFIG));
-  }
-
-  let config = loadConfig();
-  let categories = []; // [{ id, order, name:{en,hi,gu}, items:[{order,en,hi,gu,price}] }]
-
-  function rowsFromCategories(){
-    const rows = [];
-    categories.forEach((c, ci) => {
-      if (!c.items.length) {
-        rows.push({ category_order: ci+1, category_id: c.id, category_en: c.name.en, category_hi: c.name.hi, category_gu: c.name.gu, item_order:'', item_en:'', item_hi:'', item_gu:'', price:'' });
-        return;
-      }
-      c.items.forEach((it, ii) => {
-        rows.push({
-          category_order: ci+1, category_id: c.id, category_en: c.name.en, category_hi: c.name.hi, category_gu: c.name.gu,
-          item_order: ii+1, item_en: it.en, item_hi: it.hi, item_gu: it.gu, price: it.price
-        });
-      });
-    });
-    return rows;
-  }
-
-  function categoriesFromRows(rows){
-    const byId = new Map();
-    rows.forEach(r => {
-      const id = (r.category_id || '').trim();
-      if (!id) return;
-      if (!byId.has(id)) {
-        byId.set(id, { id, order: Number(r.category_order)||0, name:{en:r.category_en||'',hi:r.category_hi||'',gu:r.category_gu||''}, items: [] });
-      }
-      const en = (r.item_en || '').trim();
-      if (!en) return;
-      byId.get(id).items.push({ order: Number(r.item_order)||0, en, hi:r.item_hi||'', gu:r.item_gu||'', price:r.price||'' });
-    });
-    const cats = [...byId.values()];
-    cats.forEach(c => c.items.sort((a,b)=>a.order-b.order));
-    cats.sort((a,b)=>a.order-b.order);
-    return cats;
-  }
-
-  function loadCategories(){
-    try {
-      const raw = localStorage.getItem(STORAGE_CSV);
-      if (raw) {
-        const res = Papa.parse(raw, { header:true, skipEmptyLines:true });
-        const parsed = categoriesFromRows(res.data);
-        // Ignore a stale/empty saved override (e.g. from an earlier bug or a
-        // save that happened before the menu had loaded) — fall through to
-        // the real menu.csv / embedded fallback instead of showing nothing.
-        if (parsed.length) {
-          categories = parsed;
-          renderCategories();
-          return;
-        } else {
-          localStorage.removeItem(STORAGE_CSV);
-        }
-      }
-    } catch(e){}
-    Papa.parse('menu.csv', {
-      download: true, header: true, skipEmptyLines: true,
-      complete: res => { categories = categoriesFromRows(res.data); renderCategories(); },
-      error: () => {
-        // e.g. opened via file:// where fetch is blocked — use the embedded copy
-        if (window.NDD_MENU_CSV_FALLBACK) {
-          const res = Papa.parse(window.NDD_MENU_CSV_FALLBACK, { header:true, skipEmptyLines:true });
-          categories = categoriesFromRows(res.data);
-        } else {
-          categories = [];
-        }
-        renderCategories();
-      }
-    });
-  }
-
-  // ---------------- Brand form ----------------
-  function fillBrandForm(){
-    const b = config.brand;
-    document.getElementById('b_name').value = b.name || '';
-    document.getElementById('b_tagline').value = b.tagline || '';
-    document.getElementById('b_since').value = b.since || '';
-    document.getElementById('b_specialty').value = b.specialty || '';
-    document.getElementById('b_meta').value = b.meta || '';
-    document.getElementById('b_phone1').value = (b.phones || [])[0] || '';
-    document.getElementById('b_phone2').value = (b.phones || [])[1] || '';
-    document.getElementById('b_address').value = b.address || '';
-    document.getElementById('b_mapUrl').value = b.mapUrl || '';
-    document.getElementById('b_stockEn').value = (b.stockNote || {}).en || '';
-    document.getElementById('b_stockHi').value = (b.stockNote || {}).hi || '';
-    document.getElementById('b_stockGu').value = (b.stockNote || {}).gu || '';
-    document.getElementById('b_sourceEn').value = (b.sourceNote || {}).en || '';
-    wireAllSpellcheck(document.getElementById('page-brand'));
-  }
-
-  function readBrandForm(){
-    const b = config.brand;
-    b.name = document.getElementById('b_name').value.trim();
-    b.tagline = document.getElementById('b_tagline').value.trim();
-    b.since = document.getElementById('b_since').value.trim();
-    b.specialty = document.getElementById('b_specialty').value.trim();
-    b.meta = document.getElementById('b_meta').value.trim();
-    const p1 = document.getElementById('b_phone1').value.trim();
-    const p2 = document.getElementById('b_phone2').value.trim();
-    b.phones = [p1, p2].filter(Boolean);
-    b.address = document.getElementById('b_address').value.trim();
-    b.mapUrl = document.getElementById('b_mapUrl').value.trim();
-    b.stockNote = b.stockNote || {};
-    b.stockNote.en = document.getElementById('b_stockEn').value;
-    b.stockNote.hi = document.getElementById('b_stockHi').value;
-    b.stockNote.gu = document.getElementById('b_stockGu').value;
-    b.sourceNote = b.sourceNote || {};
-    b.sourceNote.en = document.getElementById('b_sourceEn').value;
-  }
-
-  // ---------------- Categories & items UI ----------------
-  function renderCategories(){
-    const list = document.getElementById('catList');
-    list.innerHTML = '';
-    document.getElementById('catEmpty').style.display = categories.length ? 'none' : 'block';
-
-    categories.forEach((cat, ci) => {
-      const card = document.createElement('div');
-      card.className = 'cat-card';
-      card.innerHTML = `
-        <div class="cat-card-head">
-          <button class="move-btn" data-act="up" title="Move category up">↑</button>
-          <button class="move-btn" data-act="down" title="Move category down">↓</button>
-          <div class="grow field-wrap">
-            <input type="text" data-f="name_en" value="${esc(cat.name.en)}" placeholder="Category name (English)" spellcheck="true" lang="en">
-          </div>
-          <span class="cat-count">${cat.items.length} item${cat.items.length===1?'':'s'}</span>
-          <button class="icon-btn" data-act="delete" title="Delete category">✕</button>
-        </div>
-        <div class="cat-body">
-          <div class="cat-langs">
-            <div><label>Name (Hindi)</label><input type="text" data-f="name_hi" value="${esc(cat.name.hi)}"></div>
-            <div><label>Name (Gujarati)</label><input type="text" data-f="name_gu" value="${esc(cat.name.gu)}"></div>
-          </div>
-          <div class="items-holder"></div>
-          <button class="btn small" data-act="addItem">+ Add Item</button>
-        </div>`;
-      list.appendChild(card);
-
-      card.querySelector('[data-f=name_en]').addEventListener('input', e => cat.name.en = e.target.value);
-      card.querySelector('[data-f=name_hi]').addEventListener('input', e => cat.name.hi = e.target.value);
-      card.querySelector('[data-f=name_gu]').addEventListener('input', e => cat.name.gu = e.target.value);
-      card.querySelector('[data-act=up]').addEventListener('click', () => moveCategory(ci, -1));
-      card.querySelector('[data-act=down]').addEventListener('click', () => moveCategory(ci, 1));
-      card.querySelector('[data-act=delete]').addEventListener('click', () => {
-        if (confirm(`Delete category "${cat.name.en}" and all its items?`)) { categories.splice(ci,1); renderCategories(); }
-      });
-
-      const itemsHolder = card.querySelector('.items-holder');
-      const countEl = card.querySelector('.cat-count');
-      function renderItems(){
-        itemsHolder.innerHTML = '';
-        cat.items.forEach((it, ii) => {
-          const row = document.createElement('div');
-          row.className = 'item-card';
-          row.innerHTML = `
-            <div class="item-top">
-              <button class="move-btn" data-act="up" title="Move item up">↑</button>
-              <button class="move-btn" data-act="down" title="Move item down">↓</button>
-              <div class="grow field-wrap"><input type="text" data-f="en" value="${esc(it.en)}" placeholder="Item name (English)" spellcheck="true" lang="en"></div>
-              <div class="item-price"><input type="text" data-f="price" value="${esc(it.price)}" placeholder="Price (e.g. 80 Rs / plate)"></div>
-              <button class="icon-btn" data-act="delete" title="Delete item">✕</button>
-            </div>
-            <div class="item-langs">
-              <input type="text" data-f="hi" value="${esc(it.hi)}" placeholder="Hindi name">
-              <input type="text" data-f="gu" value="${esc(it.gu)}" placeholder="Gujarati name">
-            </div>`;
-          itemsHolder.appendChild(row);
-          row.querySelectorAll('input').forEach(inp => {
-            inp.addEventListener('input', () => { it[inp.dataset.f] = inp.value; });
-          });
-          row.querySelector('[data-act=delete]').addEventListener('click', () => {
-            cat.items.splice(ii,1); renderItems();
-            countEl.textContent = cat.items.length + (cat.items.length===1?' item':' items');
-          });
-          row.querySelector('[data-act=up]').addEventListener('click', () => {
-            if (ii===0) return; [cat.items[ii-1],cat.items[ii]]=[cat.items[ii],cat.items[ii-1]]; renderItems();
-          });
-          row.querySelector('[data-act=down]').addEventListener('click', () => {
-            if (ii===cat.items.length-1) return; [cat.items[ii+1],cat.items[ii]]=[cat.items[ii],cat.items[ii+1]]; renderItems();
-          });
-          wireAllSpellcheck(row);
-        });
-      }
-      renderItems();
-
-      card.querySelector('[data-act=addItem]').addEventListener('click', () => {
-        cat.items.push({ en:'', hi:'', gu:'', price:'' });
-        renderItems();
-        countEl.textContent = cat.items.length + (cat.items.length===1?' item':' items');
-      });
-
-      wireAllSpellcheck(card);
-    });
-  }
-
-  function moveCategory(index, dir){
-    const newIndex = index + dir;
-    if (newIndex < 0 || newIndex >= categories.length) return;
-    [categories[index], categories[newIndex]] = [categories[newIndex], categories[index]];
-    renderCategories();
-  }
-
-  document.getElementById('addCatBtn').addEventListener('click', () => {
-    categories.push({ id: uid(), name:{en:'New Category',hi:'',gu:''}, items: [] });
-    renderCategories();
-  });
-
-  // ---------------- Notices ----------------
-  function renderNotices(){
-    const list = document.getElementById('noticeList');
-    list.innerHTML = '';
-    (config.notices || []).forEach((n, ni) => {
-      const block = document.createElement('div');
-      block.className = 'notice-block';
-      block.innerHTML = `
-        <div class="toolrow" style="justify-content:space-between">
-          <strong class="hint">Notice ${ni+1}</strong>
-          <button class="icon-btn" data-act="delete">✕ Delete</button>
-        </div>
-        <div class="field-wrap"><label>Title (English)</label><input type="text" data-f="title_en" value="${esc(n.title.en||'')}" spellcheck="true" lang="en"></div>
-        <div class="field-wrap"><label>Body HTML (English)</label><textarea data-f="html_en" spellcheck="true" lang="en">${n.html.en||''}</textarea></div>
-        <div class="bulk-holder"></div>
-        <button class="btn small" data-act="addBulk">+ Add bulk-list line</button>
-        <div class="field-wrap"><label style="margin-top:10px">Bulk Pricing Note (English, optional)</label><textarea data-f="bulkPricing_en" spellcheck="true" lang="en">${(n.bulkPricing||{}).en||''}</textarea></div>`;
-      list.appendChild(block);
-
-      block.querySelector('[data-act=delete]').addEventListener('click', () => {
-        if (confirm('Delete this notice?')) { config.notices.splice(ni,1); renderNotices(); }
-      });
-      block.querySelector('[data-f=title_en]').addEventListener('input', e => n.title.en = e.target.value);
-      block.querySelector('[data-f=html_en]').addEventListener('input', e => n.html.en = e.target.value);
-      block.querySelector('[data-f=bulkPricing_en]').addEventListener('input', e => { n.bulkPricing = n.bulkPricing || {}; n.bulkPricing.en = e.target.value; });
-
-      const bulkHolder = block.querySelector('.bulk-holder');
-      function renderBulk(){
-        bulkHolder.innerHTML = '';
-        (n.bulkList||[]).forEach((b, bi) => {
-          const row = document.createElement('div');
-          row.className = 'bulk-item';
-          row.innerHTML = `<input type="text" placeholder="English" value="${esc(b.en||'')}" spellcheck="true" lang="en"><button class="icon-btn">✕</button>`;
-          bulkHolder.appendChild(row);
-          row.querySelector('input').addEventListener('input', e => { b.en = e.target.value; });
-          row.querySelector('button').addEventListener('click', () => { n.bulkList.splice(bi,1); renderBulk(); });
-        });
-      }
-      renderBulk();
-      block.querySelector('[data-act=addBulk]').addEventListener('click', () => {
-        n.bulkList = n.bulkList || [];
-        n.bulkList.push({ en:'', hi:'', gu:'' });
-        renderBulk();
-      });
-      wireAllSpellcheck(block);
-    });
-  }
-
-  document.getElementById('addNoticeBtn').addEventListener('click', () => {
-    config.notices = config.notices || [];
-    config.notices.push({ title:{en:'New Notice',hi:'',gu:''}, html:{en:'',hi:'',gu:''}, bulkList:[] });
-    renderNotices();
-  });
-
-  // ---------------- Unsaved-changes indicator (floating Save & Publish button) ----------------
-  const saveFab = document.getElementById('saveFab');
-  const fabLabel = document.getElementById('fabLabel');
-  let isDirty = false;
-  function markDirty(){
-    if (isDirty) return;
-    isDirty = true;
-    saveFab.classList.add('dirty');
-    fabLabel.textContent = 'Save & Publish';
-  }
-  function clearDirty(){
-    isDirty = false;
-    saveFab.classList.remove('dirty');
-  }
-  const appShell = document.getElementById('appShell');
-  appShell.addEventListener('input', markDirty);
-  appShell.addEventListener('click', e => {
-    if (e.target.closest('button[data-act], #addCatBtn, #addNoticeBtn')) markDirty();
-  });
-
-  // ---------------- Save / Reset / Export ----------------
-  function save(){
-    readBrandForm();
-    localStorage.setItem(STORAGE_CONFIG, JSON.stringify(config));
-    localStorage.setItem(STORAGE_CSV, currentCsvText());
-    showStatus('Saved — live site updated', true);
-    clearDirty();
-    saveFab.classList.add('spinning');
-    fabLabel.textContent = 'Saved ✓';
-    setTimeout(() => { saveFab.classList.remove('spinning'); fabLabel.textContent = 'Save & Publish'; }, 1400);
-  }
-  document.getElementById('saveBtn').addEventListener('click', save);
-  saveFab.addEventListener('click', save);
-
-  document.getElementById('resetBtn').addEventListener('click', () => {
-    if (!confirm('Reset all changes back to the original defaults? This clears your saved edits.')) return;
-    localStorage.removeItem(STORAGE_CONFIG);
-    localStorage.removeItem(STORAGE_CSV);
-    config = JSON.parse(JSON.stringify(window.NDD_CONFIG));
-    fillBrandForm(); renderNotices(); loadCategories();
-    clearDirty();
-    showStatus('Reset to defaults', true);
-  });
-
-  document.getElementById('viewSiteBtn').addEventListener('click', () => window.open('index.html', '_blank'));
-
-  function download(filename, text, mime){
-    const blob = new Blob([text], { type: mime || 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = filename;
-    document.body.appendChild(a); a.click(); a.remove();
-    URL.revokeObjectURL(url);
-  }
-
-  function currentCsvText(){
-    return Papa.unparse({ fields: COLS, data: rowsFromCategories().map(r => COLS.map(c => r[c] ?? '')) });
-  }
-
-  document.getElementById('downloadCsvBtn').addEventListener('click', () => {
-    download('menu.csv', currentCsvText(), 'text/csv');
-  });
-
-  document.getElementById('downloadFallbackBtn').addEventListener('click', () => {
-    const text = '/*\n  Embedded fallback copy of menu.csv, used only when the page can\'t fetch\n  menu.csv directly (e.g. opened as a local file instead of via a web\n  server/GitHub Pages). Keep this in sync whenever menu.csv changes —\n  the admin panel\'s Export tab regenerates this file for you automatically.\n*/\nwindow.NDD_MENU_CSV_FALLBACK = `' + currentCsvText().trim() + '\n`;\n';
-    download('menu-fallback.js', text);
-  });
-
-  document.getElementById('downloadConfigBtn').addEventListener('click', () => {
-    readBrandForm();
-    const text = '/*\n  New Delhi Darbar — brand info & notices.\n  Menu categories/items live in menu.csv (open & edit in Excel).\n  Edit this file\'s contents via admin.html (Admin Panel) — changes there\n  update both this data and menu.csv, and both pages reflect it automatically.\n*/\nwindow.NDD_CONFIG = ' + JSON.stringify(config, null, 2) + ';\n';
-    download('config.js', text);
-  });
-
-  fillBrandForm();
-  renderNotices();
-  loadCategories();
-})();
-</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="src/core/config.js"></script>
+<script src="src/core/menu-fallback.js"></script>
+<script src="src/core/glossary.js"></script>
+<script src="src/core/i18n.js"></script>
+<script src="src/core/store.js"></script>
+<script src="src/pages/admin.js"></script>
 </body>
 </html>

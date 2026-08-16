@@ -1,0 +1,16 @@
+{
+  "name": "new-delhi-darbar-menu",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Digital menu and admin panel for New Delhi Darbar restaurant, Valsad.",
+  "homepage": "https://anvra.github.io/New-Delhi-Darbar-Menu/",
+  "scripts": {
+    "test": "node scripts/test-e2e.js",
+    "start": "python -m http.server 8080",
+    "qr": "python scripts/generate_qr.py"
+  },
+  "devDependencies": {
+    "jsdom": "^29.1.1",
+    "papaparse": "^5.6.0"
+  }
+}

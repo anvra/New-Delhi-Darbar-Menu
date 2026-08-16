@@ -74,6 +74,6 @@ phones = f"Orders: {phone1}  |  {phone2}"
 draw_centered_text(draw, phones, font_phone, canvas_h - 100, muted_color)
 
 # Save
-output_path = "New_Delhi_Darbar_QR_Code.png"
+output_path = "assets/img/qr-code.png"
 canvas.save(output_path)
 print(f"QR Code successfully generated: {output_path}")
