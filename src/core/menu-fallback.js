@@ -18,7 +18,7 @@ window.NDD_MENU_CSV_FALLBACK = `category_order,category_id,category_en,category_
 2,mutton,Mutton Item,,,5,Kebab (Fry),,,100 Rs / plate
 3,fish,Fish Item,,,1,Paplet Fry,,,100 Rs / plate
 3,fish,Fish Item,,,2,Jinga(Gravy),,,100 Rs / plate
-3,fish,Fish Item,,,3,Fish Fry,,,100 Rs / plate
+3,fish,Fish Item,,,3,Seasonal Fish Fry,,,100 Rs / plate
 4,rice,Rice,,,1,Biryani Rice,,,30 Rs / plate
 4,rice,Rice,,,2,Plain Rice,,,30 Rs / plate
 5,roti,Roti,,,1,Plain Roti,,,5 Rs / pc
