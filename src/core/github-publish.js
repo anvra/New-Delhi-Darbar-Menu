@@ -146,6 +146,53 @@
     };
   }
 
-  root.NDDGitHubPublish = { setToken, clearToken, hasToken, getRepo, verify, publishFiles, toBase64 };
+  /*
+    Check whether GitHub Pages has finished deploying the just-published
+    content, by fetching the LIVE public menu.csv (no token needed — it's a
+    public file) and comparing it to what was just pushed. This is what lets
+    Commit & Push report a real "it's live" instead of guessing "about a
+    minute" and hoping.
+
+    Cache-busted with a query param, since GitHub Pages/its CDN cache
+    unauthenticated GETs — without busting, a poll could keep reading a
+    stale cached copy even after the new version is actually live.
+  */
+  async function isLiveContentUpdated(expectedCsvContent) {
+    const { owner, repo } = getRepo();
+    const url = `https://${owner}.github.io/${repo}/assets/data/menu.csv?_=${Date.now()}`;
+    let res;
+    try {
+      res = await fetch(url, { cache: 'no-store' });
+    } catch (e) {
+      return false; // network hiccup — caller just retries on the next poll tick
+    }
+    if (!res.ok) return false;
+    const liveText = await res.text();
+    return liveText.trim() === expectedCsvContent.trim();
+  }
+
+  /*
+    Poll isLiveContentUpdated until it matches, or until timeoutMs elapses.
+    Calls onTick(elapsedMs) before each check so the caller can update a
+    status message. Returns true if it went live within the timeout.
+  */
+  async function waitForLive(expectedCsvContent, opts) {
+    const intervalMs = (opts && opts.intervalMs) || 4000;
+    const timeoutMs = (opts && opts.timeoutMs) || 120000;
+    const onTick = (opts && opts.onTick) || (() => {});
+    const start = Date.now();
+
+    while (Date.now() - start < timeoutMs) {
+      onTick(Date.now() - start);
+      if (await isLiveContentUpdated(expectedCsvContent)) return true;
+      await new Promise(r => setTimeout(r, intervalMs));
+    }
+    return false;
+  }
+
+  root.NDDGitHubPublish = {
+    setToken, clearToken, hasToken, getRepo, verify, publishFiles, toBase64,
+    isLiveContentUpdated, waitForLive
+  };
 
 })(typeof window !== 'undefined' ? window : globalThis);

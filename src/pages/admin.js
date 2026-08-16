@@ -682,37 +682,99 @@
     $('tokenInput').value = '';
   }
 
+  /*
+    Renders the "Publish to Page" status box through its stages:
+    publishing -> committed, waiting for GitHub Pages -> live (verified) or
+    still-building (timed out, but not an error). A distinct function per
+    stage keeps each state's markup/actions easy to reason about and test.
+  */
+  function renderPublishing() {
+    resultBox('publishResult', 'ok', 'Publishing…', '<div>Pushing your changes to GitHub.</div>');
+  }
+
+  function renderWaitingForPages(pagesUrl) {
+    resultBox('publishResult', 'ok', 'Publish to Page — building…',
+      `<div>Your changes were committed and pushed. GitHub Pages is now building the update —
+       this usually takes under a minute.</div>
+       <div class="toolrow" style="margin-top:8px">
+         <a class="btn small" href="${esc(pagesUrl)}" target="_blank" rel="noopener">Open Live Page ↗</a>
+       </div>`);
+  }
+
+  function renderLive(pagesUrl, commitUrl) {
+    resultBox('publishResult', 'ok', 'Published — your changes are live',
+      `<div class="toolrow" style="margin-top:2px">
+         <a class="btn small primary" href="${esc(pagesUrl)}" target="_blank" rel="noopener">Open Live Page ↗</a>
+         <a class="btn small" href="${esc(commitUrl)}" target="_blank" rel="noopener">View Commit ↗</a>
+       </div>`);
+  }
+
+  function renderStillBuilding(pagesUrl, retryFn) {
+    resultBox('publishResult', 'ok', 'Publish to Page — still building',
+      `<div>The commit went through, but GitHub Pages hasn't finished publishing it yet.
+       This can occasionally take a few minutes.</div>
+       <div class="toolrow" style="margin-top:8px">
+         <button class="btn small primary" id="publishCheckAgainBtn" type="button">Check Again</button>
+         <a class="btn small" href="${esc(pagesUrl)}" target="_blank" rel="noopener">Open Live Page ↗</a>
+       </div>`);
+    const retryBtn = $('publishCheckAgainBtn');
+    if (retryBtn) retryBtn.addEventListener('click', retryFn, { once: true });
+  }
+
   async function doCommitAndPush(token) {
     GitHubPublish.setToken(token);
     const btn = $('tokenConfirmBtn');
     btn.disabled = true;
     const original = btn.textContent;
     btn.textContent = 'Publishing…';
-    resultBox('publishResult', 'ok', 'Publishing…', '');
+    renderPublishing();
 
+    const files = [
+      { path: 'assets/data/menu.csv', content: Store.categoriesToCsv(data.categories) },
+      { path: 'src/core/menu-fallback.js', content: Store.fallbackFileText(data) },
+      { path: 'src/core/config.js', content: Store.configFileText(data) }
+    ];
+    const publishedCsv = files[0].content;
+
+    let result;
     try {
-      const result = await GitHubPublish.publishFiles([
-        { path: 'assets/data/menu.csv', content: Store.categoriesToCsv(data.categories) },
-        { path: 'src/core/menu-fallback.js', content: Store.fallbackFileText(data) },
-        { path: 'src/core/config.js', content: Store.configFileText(data) }
-      ], 'Update menu from Admin Panel');
-
-      Store.save(data);
-      clearDirty();
-      closeTokenModal();
-      resultBox('publishResult', 'ok', 'Published',
-        `<div>Live in about a minute. <a href="${esc(result.pagesUrl)}" target="_blank" rel="noopener">View the site ↗</a></div>`);
-      showStatus('Published to the website', 'ok');
+      result = await GitHubPublish.publishFiles(files, 'Update menu from Admin Panel');
     } catch (err) {
-      resultBox('publishResult', 'err', 'Could not publish',
-        `<div>${esc(err.message)}</div><div style="margin-top:6px">Nothing was changed. Your edits are still here — try again, or use the manual files below.</div>`);
-    } finally {
-      // Always discard the token, whether this succeeded or failed — it is
-      // never kept around for a "try again" retry; re-entering it is the point.
+      // The token is only ever needed for the commit itself — discard it the
+      // instant that's done, whether it succeeded or failed, rather than
+      // holding it in memory through the (much longer) Pages-build wait below.
       GitHubPublish.clearToken();
       btn.disabled = false;
       btn.textContent = original;
+      resultBox('publishResult', 'err', 'Could not publish',
+        `<div>${esc(err.message)}</div><div style="margin-top:6px">Nothing was changed. Your edits are still here — try again, or use the manual files below.</div>`);
+      return;
     }
+
+    GitHubPublish.clearToken();
+    btn.disabled = false;
+    btn.textContent = original;
+
+    Store.save(data);
+    clearDirty();
+    closeTokenModal();
+    showStatus('Committed and pushed', 'ok');
+
+    // The commit's push to `main` is exactly what triggers
+    // .github/workflows/deploy-pages.yml — GitHub Pages deployment starts
+    // automatically the moment the push above lands, with no separate call
+    // needed here. This just watches the PUBLIC site until that finishes.
+    async function checkNow() {
+      renderWaitingForPages(result.pagesUrl);
+      const live = await GitHubPublish.waitForLive(publishedCsv, { intervalMs: 4000, timeoutMs: 90000 });
+      if (live) {
+        renderLive(result.pagesUrl, result.commitUrl);
+        showStatus('Published — now live', 'ok');
+      } else {
+        renderStillBuilding(result.pagesUrl, checkNow);
+      }
+    }
+    await checkNow();
   }
 
   if ($('commitPushBtn')) {

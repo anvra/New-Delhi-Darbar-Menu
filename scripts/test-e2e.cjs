@@ -146,6 +146,11 @@ function mockGitHubPublish(window, opts) {
     pagesUrl: 'https://anvra.github.io/New-Delhi-Darbar-Menu/'
   };
   const publishError = opts && opts.publishError;
+  // Default: the live site "goes live" on the first poll — tests that want
+  // to see the "still building" state pass `goesLiveAfterTicks` or `neverGoesLive`.
+  const neverGoesLive = opts && opts.neverGoesLive;
+  const goesLiveAfterTicks = (opts && opts.goesLiveAfterTicks) || 0;
+
   const GH = window.NDDGitHubPublish;
   const realSetToken = GH.setToken;
   GH.setToken = token => { window.__lastTokenSet = token; realSetToken(token); };
@@ -153,6 +158,15 @@ function mockGitHubPublish(window, opts) {
     window.__lastPublishCall = { files, message };
     if (publishError) throw new Error(publishError);
     return publishResult;
+  };
+
+  let ticks = 0;
+  GH.waitForLive = async (expectedCsv, waitOpts) => {
+    window.__lastWaitForLiveCsv = expectedCsv;
+    if (neverGoesLive) return false;
+    ticks++;
+    if (waitOpts && waitOpts.onTick) waitOpts.onTick(0);
+    return ticks > goesLiveAfterTicks;
   };
 }
 
@@ -797,8 +811,15 @@ async function loadAdmin(storageSeed, opts) {
       /let memoryToken/.test(ghSrc));
 
     const adminJsSrc = fs.readFileSync(path.join(ROOT, 'src/pages/admin.js'), 'utf8');
-    check('admin.js clears the token after every publish attempt (success or failure)',
-      /finally[\s\S]{0,200}clearToken/.test(adminJsSrc));
+    // The token must be cleared immediately after the commit call settles —
+    // both on the success path and inside the catch block — rather than
+    // being held through the (much longer) Pages-build wait that follows.
+    const clearTokenCount = (adminJsSrc.match(/GitHubPublish\.clearToken\(\)/g) || []).length;
+    check('admin.js clears the token on the success path', /publishFiles\(files/.test(adminJsSrc));
+    check('admin.js clears the token in the catch block, before the Pages wait',
+      /catch \(err\) \{[\s\S]{0,300}GitHubPublish\.clearToken\(\)/.test(adminJsSrc));
+    check('admin.js clears the token at least twice (success path + failure path)',
+      clearTokenCount >= 2, `found ${clearTokenCount}`);
 
     // No <form> anywhere in admin.html — the whole class of "credentials
     // leaked into the URL via native GET submission" bug is structurally
@@ -813,6 +834,55 @@ async function loadAdmin(storageSeed, opts) {
     // action — nothing for a password manager or browser history to capture.
     check('the token input has no name attribute (nothing for a form/history to remember it as)',
       !/id="tokenInput"[^>]*name=/.test(adminHtml));
+  }
+
+  /* ---------------- 10d-2. Live-verification against the real GitHub Pages URL ---------------- */
+  {
+    // Exercises isLiveContentUpdated/waitForLive directly (not mocked here),
+    // against a stubbed global fetch, so the actual comparison/cache-busting/
+    // retry logic is verified rather than assumed.
+    const page = await loadPage('admin.html');
+    const GH = page.window.NDDGitHubPublish;
+
+    let requestedUrls = [];
+    page.window.fetch = async (url) => {
+      requestedUrls.push(String(url));
+      return { ok: true, text: async () => 'category_order,category_id\nmatching-content\n' };
+    };
+    const matched = await GH.isLiveContentUpdated('category_order,category_id\nmatching-content\n');
+    check('matching live content is detected as updated', matched === true);
+    check('the request targets the real public repo\'s Pages URL',
+      requestedUrls[0].startsWith('https://anvra.github.io/New-Delhi-Darbar-Menu/assets/data/menu.csv'));
+    check('the request is cache-busted with a query parameter',
+      /\?_=\d+/.test(requestedUrls[0]));
+
+    page.window.fetch = async () => ({ ok: true, text: async () => 'something-else-entirely' });
+    const notMatched = await GH.isLiveContentUpdated('category_order,category_id\nmatching-content\n');
+    check('non-matching live content is detected as not-yet-updated', notMatched === false);
+
+    page.window.fetch = async () => { throw new TypeError('network error'); };
+    const onNetworkError = await GH.isLiveContentUpdated('anything');
+    check('a network error while polling is treated as not-yet-live, not a crash', onNetworkError === false);
+
+    page.window.fetch = async () => ({ ok: false, status: 404, text: async () => '' });
+    const on404 = await GH.isLiveContentUpdated('anything');
+    check('a 404 while polling is treated as not-yet-live', on404 === false);
+
+    // waitForLive must actually retry across the interval, not just check once.
+    let calls = 0;
+    page.window.fetch = async () => {
+      calls++;
+      return { ok: true, text: async () => (calls >= 3 ? 'target' : 'not yet') };
+    };
+    const wentLive = await GH.waitForLive('target', { intervalMs: 5, timeoutMs: 1000 });
+    check('waitForLive retries until the content matches', wentLive === true);
+    check('waitForLive actually polled more than once', calls >= 3, `only ${calls} calls`);
+
+    // And it must give up (return false) rather than hang forever if the
+    // content never matches within the timeout.
+    page.window.fetch = async () => ({ ok: true, text: async () => 'never matches' });
+    const timedOut = await GH.waitForLive('target', { intervalMs: 5, timeoutMs: 30 });
+    check('waitForLive times out and returns false rather than hanging', timedOut === false);
   }
 
   /* ---------------- 10e. Commit & Push calls the publish module correctly ---------------- */
@@ -838,6 +908,10 @@ async function loadAdmin(storageSeed, opts) {
     check('a successful publish shows a result with a live-site link',
       d.getElementById('publishResult').innerHTML.includes('github.io'));
     check('the token input is cleared after a successful publish', d.getElementById('tokenInput').value === '');
+    check('the publish result reports the change is live, not a guessed ETA',
+      /live/i.test(d.getElementById('publishResult').textContent) &&
+      !/about a minute/i.test(d.getElementById('publishResult').textContent));
+    check('an "Open Live Page" action is offered', d.getElementById('publishResult').innerHTML.includes('Open Live Page'));
 
     // A failed publish (bad token, network error, etc.) must show the error,
     // clear the token anyway, and never lose the admin's edits.
@@ -860,6 +934,47 @@ async function loadAdmin(storageSeed, opts) {
     dc.getElementById('tokenCancelBtn').click();
     check('cancel closes the token modal', dc.getElementById('tokenModal').hidden === true);
     check('cancel does not publish anything', !cancelling.window.__lastPublishCall);
+  }
+
+  /* ---------------- 10e-2. Publish to Page: live-verification & GitHub Pages auto-trigger ---------------- */
+  {
+    // Committing must send exactly the CSV that gets compared against the
+    // live site — this is the whole mechanism that lets "Published" mean
+    // something real instead of a guessed ETA.
+    const authed = await loadAdmin();
+    const d = authed.window.document;
+    d.getElementById('commitPushBtn').click();
+    d.getElementById('tokenInput').value = 'github_pat_x';
+    d.getElementById('tokenConfirmBtn').click();
+    await new Promise(r => setTimeout(r, 80));
+    check('the commit is pushed to a branch whose GitHub Actions trigger already deploys Pages '
+      + '(no separate deploy call is needed — deploy-pages.yml runs on push to main)',
+      fs.readFileSync(path.join(ROOT, '.github/workflows/deploy-pages.yml'), 'utf8').includes("branches: [main]"));
+    check('waitForLive was called to verify the live site actually updated',
+      typeof authed.window.__lastWaitForLiveCsv === 'string' && authed.window.__lastWaitForLiveCsv.length > 0);
+    check('the token was cleared before the (much longer) Pages-build wait began',
+      !authed.window.NDDGitHubPublish.hasToken());
+
+    // If the site hasn't updated yet, show a clear "still building" state
+    // with a way to check again — not a false "Published" claim.
+    const slow = await loadAdmin(null, { neverGoesLive: true });
+    const ds = slow.window.document;
+    ds.getElementById('commitPushBtn').click();
+    ds.getElementById('tokenInput').value = 'github_pat_x';
+    ds.getElementById('tokenConfirmBtn').click();
+    await new Promise(r => setTimeout(r, 80));
+    check('a not-yet-live result shows a "still building" status, not a false "published"',
+      /still building/i.test(ds.getElementById('publishResult').textContent));
+    check('a "Check Again" action is offered', !!ds.getElementById('publishCheckAgainBtn'));
+
+    // Checking again, and this time it has gone live, must update the status
+    // to the live/verified state.
+    slow.window.NDDGitHubPublish.waitForLive = async () => true;
+    ds.getElementById('publishCheckAgainBtn').click();
+    await new Promise(r => setTimeout(r, 40));
+    check('clicking Check Again re-verifies and reports live once it is',
+      /live/i.test(ds.getElementById('publishResult').textContent) &&
+      !/still building/i.test(ds.getElementById('publishResult').textContent));
   }
 
   /* ---------------- 10f. Preview tab renders the current draft ---------------- */

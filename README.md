@@ -118,6 +118,12 @@ The flow is:
    your current unsaved draft, before anything goes live.
 5. Open the **Publish** tab and click **Commit & Push**. You'll be asked for a
    GitHub Personal Access Token.
+6. That push automatically triggers GitHub Pages to rebuild — no separate step
+   needed. The panel then **automatically checks the live site** until your
+   change actually appears there, and shows **Published — your changes are
+   live** with an **Open Live Page** button, rather than a guessed "about a
+   minute." If the build is taking longer than usual, it shows **still
+   building** instead, with a **Check Again** button.
 
 ### About the GitHub token
 
@@ -137,7 +143,11 @@ GitHub settings page). Scoped this way, even a misused token can only edit
 this one project's files.
 
 Publishing writes `menu.csv`, `menu-fallback.js` and `config.js` in a **single
-commit**, so GitHub Pages rebuilds once. The live site updates in about a minute.
+commit**, so GitHub Pages rebuilds once. The push itself is what triggers the
+rebuild (`.github/workflows/deploy-pages.yml` runs on every push to `main`) —
+the admin panel doesn't need to call anything extra to kick that off. It just
+polls the live `menu.csv` afterward (no token needed for that, it's public)
+until the new content actually appears, so "Published" means verified, not guessed.
 
 ### Backup, restore, and manual publishing
 
