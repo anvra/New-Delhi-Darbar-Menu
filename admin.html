@@ -82,6 +82,35 @@
   .bulk-item input{flex:1}
 
   .empty-state{text-align:center;padding:26px 10px;color:var(--muted);font-size:13px}
+
+  .save-fab{
+    position:fixed; right:20px; bottom:20px; z-index:50;
+    display:inline-flex; align-items:center; gap:9px;
+    background:var(--accent); color:#fff; border:0; border-radius:999px;
+    padding:15px 22px; font-size:14px; font-weight:750; letter-spacing:.01em;
+    box-shadow:0 12px 30px color-mix(in srgb, var(--accent) 40%, transparent), 0 2px 6px rgba(0,0,0,.15);
+    cursor:pointer; transition:transform .15s ease, box-shadow .15s ease;
+  }
+  .save-fab:hover{transform:translateY(-2px) scale(1.02)}
+  .save-fab:active{transform:translateY(0) scale(.98)}
+  .save-fab .sync-icon{width:19px;height:19px;flex:0 0 auto;transition:transform .5s ease}
+  .save-fab.spinning .sync-icon{animation:ndd-spin .6s linear}
+  @keyframes ndd-spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+  .save-fab .dot{
+    width:9px;height:9px;border-radius:50%;background:#fff2;
+    box-shadow:0 0 0 0 rgba(255,255,255,.6);
+  }
+  .save-fab.dirty .dot{
+    background:#fff; animation:ndd-pulse 1.4s ease-in-out infinite;
+  }
+  @keyframes ndd-pulse{
+    0%{box-shadow:0 0 0 0 rgba(255,255,255,.65)}
+    70%{box-shadow:0 0 0 9px rgba(255,255,255,0)}
+    100%{box-shadow:0 0 0 0 rgba(255,255,255,0)}
+  }
+  @media(max-width:640px){
+    .save-fab{right:14px;bottom:14px;padding:13px 18px;font-size:13px}
+  }
 </style>
 </head>
 <body>
@@ -98,7 +127,7 @@
   </div>
 </header>
 
-<div class="shell">
+<div class="shell" id="appShell">
   <div class="hint" style="margin-top:14px">
     This site is hosted on static GitHub Pages (no backend), so <strong>Save &amp; Publish</strong> stores your
     changes in this browser and updates the live site here instantly. To make a change permanent for every visitor,
@@ -174,6 +203,15 @@
     </section>
   </div>
 </div>
+
+<button class="save-fab" id="saveFab" type="button" title="Save & Publish (updates the live site instantly)">
+  <svg class="sync-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M21 12a9 9 0 0 1-15.3 6.4L3 15"/><path d="M3 12a9 9 0 0 1 15.3-6.4L21 9"/>
+    <path d="M3 21v-6h6"/><path d="M21 3v6h-6"/>
+  </svg>
+  <span id="fabLabel">Save &amp; Publish</span>
+  <span class="dot" id="fabDot"></span>
+</button>
 
 <script>
 (() => {
@@ -340,9 +378,17 @@
       const raw = localStorage.getItem(STORAGE_CSV);
       if (raw) {
         const res = Papa.parse(raw, { header:true, skipEmptyLines:true });
-        categories = categoriesFromRows(res.data);
-        renderCategories();
-        return;
+        const parsed = categoriesFromRows(res.data);
+        // Ignore a stale/empty saved override (e.g. from an earlier bug or a
+        // save that happened before the menu had loaded) — fall through to
+        // the real menu.csv / embedded fallback instead of showing nothing.
+        if (parsed.length) {
+          categories = parsed;
+          renderCategories();
+          return;
+        } else {
+          localStorage.removeItem(STORAGE_CSV);
+        }
       }
     } catch(e){}
     Papa.parse('menu.csv', {
@@ -552,14 +598,39 @@
     renderNotices();
   });
 
+  // ---------------- Unsaved-changes indicator (floating Save & Publish button) ----------------
+  const saveFab = document.getElementById('saveFab');
+  const fabLabel = document.getElementById('fabLabel');
+  let isDirty = false;
+  function markDirty(){
+    if (isDirty) return;
+    isDirty = true;
+    saveFab.classList.add('dirty');
+    fabLabel.textContent = 'Save & Publish';
+  }
+  function clearDirty(){
+    isDirty = false;
+    saveFab.classList.remove('dirty');
+  }
+  const appShell = document.getElementById('appShell');
+  appShell.addEventListener('input', markDirty);
+  appShell.addEventListener('click', e => {
+    if (e.target.closest('button[data-act], #addCatBtn, #addNoticeBtn')) markDirty();
+  });
+
   // ---------------- Save / Reset / Export ----------------
   function save(){
     readBrandForm();
     localStorage.setItem(STORAGE_CONFIG, JSON.stringify(config));
-    localStorage.setItem(STORAGE_CSV, Papa.unparse({ fields: COLS, data: rowsFromCategories().map(r => COLS.map(c => r[c] ?? '')) }));
+    localStorage.setItem(STORAGE_CSV, currentCsvText());
     showStatus('Saved — live site updated', true);
+    clearDirty();
+    saveFab.classList.add('spinning');
+    fabLabel.textContent = 'Saved ✓';
+    setTimeout(() => { saveFab.classList.remove('spinning'); fabLabel.textContent = 'Save & Publish'; }, 1400);
   }
   document.getElementById('saveBtn').addEventListener('click', save);
+  saveFab.addEventListener('click', save);
 
   document.getElementById('resetBtn').addEventListener('click', () => {
     if (!confirm('Reset all changes back to the original defaults? This clears your saved edits.')) return;
@@ -567,6 +638,7 @@
     localStorage.removeItem(STORAGE_CSV);
     config = JSON.parse(JSON.stringify(window.NDD_CONFIG));
     fillBrandForm(); renderNotices(); loadCategories();
+    clearDirty();
     showStatus('Reset to defaults', true);
   });
 

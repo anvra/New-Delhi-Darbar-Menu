@@ -508,7 +508,12 @@
     return new Promise(resolve => {
       try {
         const raw = localStorage.getItem(STORAGE_CSV);
-        if (raw) { resolve(parseCsv(raw)); return; }
+        if (raw) {
+          const parsed = parseCsv(raw);
+          // Ignore a stale/empty saved override rather than showing an empty menu.
+          if (parsed.length) { resolve(parsed); return; }
+          localStorage.removeItem(STORAGE_CSV);
+        }
       } catch (e) { /* fall through to fetch */ }
       Papa.parse('menu.csv', {
         download: true,
